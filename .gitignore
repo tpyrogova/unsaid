@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+*.local
+
+# Secrets & local env — never commit
+.env*
+.dev.vars
+
+# Private data (real journal entries, exports). Must never be committed.
+private/
+
+# Cloudflare / Wrangler
+.wrangler
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
