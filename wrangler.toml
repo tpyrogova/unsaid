@@ -5,9 +5,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "unsaid"
-# Replace with the id from `wrangler d1 create unsaid` before deploying.
-# Local development (`--local`) works with any value.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "23176b01-8ae2-4ff9-abb5-6958c55ac83a"
 migrations_dir = "migrations"
 
 # Workers AI (Qwen). Always runs on Cloudflare, also during local dev,
