@@ -28,3 +28,6 @@ npm-debug.log*
 .DS_Store
 *.suo
 *.sw?
+
+# Generated from prompts/*.md by scripts/build-prompts.mjs
+server/generated/

@@ -1,0 +1,4 @@
+# Copy to .dev.vars (git-ignored) for local development.
+# In production: `wrangler pages secret put SALT_SECRET`.
+# Used to derive decoy KDF salts for unknown emails. Any long random string.
+SALT_SECRET=change-me-to-a-long-random-string

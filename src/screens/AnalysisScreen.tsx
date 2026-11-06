@@ -1,88 +1,57 @@
-import { DistortionCard } from '../components/DistortionCard'
-import { EmotionBar } from '../components/EmotionBar'
+import { useEffect, useState } from 'react'
+import { Button } from '../components/Button'
+import { CrisisView } from '../components/CrisisView'
 import { LoadingState } from '../components/LoadingState'
-import { ObservationList } from '../components/ObservationList'
-import { ReflectionQuestion } from '../components/ReflectionQuestion'
-import { Section } from '../components/Section'
-import type { Analysis } from '../types/analysis'
+import { Notice } from '../components/Notice'
+import { ReviewView } from '../components/ReviewView'
+import { analyzeEntry } from '../lib/api'
+import type { AnalyzeResponse } from '../types/analysis'
 
-export type AnalysisState =
-  | { status: 'loading' }
-  | { status: 'ready'; analysis: Analysis }
-  | { status: 'error'; message: string }
+type State = { status: 'loading' } | { status: 'ready'; result: AnalyzeResponse } | { status: 'error'; message: string }
 
 interface AnalysisScreenProps {
-  state: AnalysisState
+  text: string
+  /** Demo uses the local mock; signed-in users get the real model. */
+  demo: boolean
   onBack: () => void
+  backLabel: string
 }
 
-export function AnalysisScreen({ state, onBack }: AnalysisScreenProps) {
+/** Careful review of a single entry. */
+export function AnalysisScreen({ text, demo, onBack, backLabel }: AnalysisScreenProps) {
+  const [state, setState] = useState<State>({ status: 'loading' })
+
+  useEffect(() => {
+    // The parent remounts this screen (via `key`) for a new text.
+    const controller = new AbortController()
+    analyzeEntry(text, { signal: controller.signal, demo })
+      .then((result) => setState({ status: 'ready', result }))
+      .catch((error: unknown) => {
+        if (controller.signal.aborted) return
+        setState({ status: 'error', message: error instanceof Error ? error.message : 'Не получилось сделать разбор.' })
+      })
+    return () => controller.abort()
+  }, [text, demo])
+
   return (
     <div className="space-y-12">
-      <button
-        type="button"
-        onClick={onBack}
-        className="-ml-2 rounded-full px-2 py-1 text-sm text-ink-soft transition-colors hover:text-ink focus-visible:ring-2 focus-visible:ring-clay/30 focus-visible:outline-none"
-      >
-        ← Вернуться к записи
-      </button>
-
-      {state.status === 'loading' && <LoadingState />}
-      {state.status === 'error' && (
-        <p role="alert" className="rounded-2xl bg-clay-soft p-5">
-          {state.message}
-        </p>
-      )}
-      {state.status === 'ready' && <AnalysisReport analysis={state.analysis} />}
+      <Button variant="ghost" onClick={onBack}>
+        ← {backLabel}
+      </Button>
+      <ResultView
+        state={state}
+        title="Разбор записи"
+        loadingHint={demo ? undefined : 'Сначала бережная проверка, потом разбор. Обычно до минуты.'}
+      />
     </div>
   )
 }
 
-function AnalysisReport({ analysis }: { analysis: Analysis }) {
-  const emotions = [...analysis.emotions].sort((a, b) => b.intensity - a.intensity)
-
-  return (
-    <article className="space-y-14">
-      <header className="space-y-4">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Разбор записи</h1>
-        <p className="font-serif text-lg leading-relaxed">{analysis.summary}</p>
-        <p className="text-sm text-ink-soft">
-          Это наблюдения, а не диагноз. Если что-то не откликается, это нормально: вам виднее.
-        </p>
-      </header>
-
-      <Section title="Эмоции" hint="Насколько ярко каждая звучит в тексте">
-        <ul className="space-y-7">
-          {emotions.map((emotion) => (
-            <EmotionBar key={emotion.name} emotion={emotion} />
-          ))}
-        </ul>
-      </Section>
-
-      <Section title="Потребности" hint="Что, возможно, сейчас не получает достаточно места">
-        <ObservationList
-          items={analysis.needs.map((need) => ({ title: need.name, evidence: need.evidence }))}
-        />
-      </Section>
-
-      <Section title="Ловушки мышления" hint="Мысль, как она прозвучала, и другой взгляд на неё">
-        <ul className="space-y-5">
-          {analysis.cognitive_distortions.map((distortion) => (
-            <DistortionCard key={distortion.quote} distortion={distortion} />
-          ))}
-        </ul>
-      </Section>
-
-      <Section title="Повторяющиеся сценарии">
-        <ObservationList
-          items={analysis.patterns.map((pattern) => ({
-            title: pattern.description,
-            evidence: pattern.evidence,
-          }))}
-        />
-      </Section>
-
-      <ReflectionQuestion question={analysis.reflection_question} />
-    </article>
-  )
+export function ResultView({ state, title, loadingHint }: { state: State; title: string; loadingHint?: string }) {
+  if (state.status === 'loading') return <LoadingState hint={loadingHint} />
+  if (state.status === 'error') return <Notice tone="error">{state.message}</Notice>
+  if (state.result.kind === 'crisis') return <CrisisView contacts={state.result.contacts} />
+  return <ReviewView review={state.result.review} meta={state.result.meta} title={title} />
 }
+
+export type { State as ResultState }
