@@ -1,5 +1,6 @@
 import type { z } from 'zod'
 import { errorResponseSchema } from '../../shared/contract'
+import { dict, getLang } from '../i18n'
 
 export class ApiError extends Error {
   readonly status: number
@@ -24,13 +25,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions<T>): P
     response = await fetch(path, {
       method: options.method ?? 'GET',
       credentials: 'same-origin',
-      headers: options.body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers: {
+        // The server answers errors in the UI language.
+        'Accept-Language': getLang(),
+        ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }),
+      },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: options.signal,
     })
   } catch (error) {
     if (options.signal?.aborted) throw error
-    throw new ApiError(0, 'Нет соединения с сервером')
+    throw new ApiError(0, dict().api.offline)
   }
 
   const data: unknown = await response.json().catch(() => null)
@@ -41,11 +46,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions<T>): P
     const unreachable = response.status >= 502 && response.status <= 504
     throw new ApiError(
       response.status,
-      unreachable ? 'Сервер временно недоступен. Попробуйте чуть позже.' : `Ошибка ${response.status}`,
+      unreachable ? dict().api.unavailable : dict().api.httpError(response.status),
     )
   }
 
   const parsed = options.schema.safeParse(data)
-  if (!parsed.success) throw new ApiError(response.status, 'Неожиданный ответ сервера')
+  if (!parsed.success) throw new ApiError(response.status, dict().api.unexpected)
   return parsed.data
 }

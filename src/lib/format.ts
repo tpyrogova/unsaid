@@ -1,21 +1,17 @@
-const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-})
+import { getLang } from '../i18n'
 
-/** "2026-10-24" → "24 октября 2026 г." (parsed as a calendar date, no timezone shift). */
-export function formatEntryDate(isoDate: string): string {
-  const [year, month, day] = isoDate.split('-').map(Number)
-  return dateFormatter.format(new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1))
+const formatters = {
+  ru: new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+  en: new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }),
 }
 
-export function pluralRu(n: number, forms: [one: string, few: string, many: string]): string {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return forms[0]
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return forms[1]
-  return forms[2]
+/**
+ * "2026-10-24" → "24 октября 2026 г." / "24 October 2026", in the UI language.
+ * Parsed as a calendar date, so there is no timezone shift.
+ */
+export function formatEntryDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  return formatters[getLang()].format(new Date(year ?? 1970, (month ?? 1) - 1, day ?? 1))
 }
 
 /** Today's calendar date in the user's timezone, `YYYY-MM-DD`. */

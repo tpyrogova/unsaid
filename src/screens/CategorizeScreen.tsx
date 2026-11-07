@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CATEGORIES, MAX_ENTRIES_PER_CATEGORIZE, type CategoryId } from '../../shared/categories'
+import { MAX_ENTRIES_PER_CATEGORIZE, type CategoryId } from '../../shared/categories'
 import { Button } from '../components/Button'
 import { Notice } from '../components/Notice'
 import {
@@ -9,7 +9,8 @@ import {
   type CategorizeProgress,
 } from '../lib/categorize'
 import type { VaultKeys } from '../lib/crypto'
-import { formatEntryDate, pluralRu } from '../lib/format'
+import { useI18n } from '../i18n'
+import { formatEntryDate } from '../lib/format'
 import { deleteEntries, updateEntries } from '../lib/journal'
 import type { JournalEntry } from '../types/journal'
 
@@ -29,9 +30,8 @@ interface CategorizeScreenProps {
 /** Rough per-batch latency observed with Qwen on Workers AI. */
 const SECONDS_PER_BATCH = 40
 
-const entriesWord = (n: number) => pluralRu(n, ['запись', 'записи', 'записей'])
-
 export function CategorizeScreen({ vault, entries: initialEntries, onBack, onDone }: CategorizeScreenProps) {
+  const { t } = useI18n()
   const [entries, setEntries] = useState(initialEntries)
   const [step, setStep] = useState<Step>(() =>
     initialEntries.some(needsCategorization) ? { name: 'intro' } : { name: 'review' },
@@ -57,8 +57,7 @@ export function CategorizeScreen({ vault, entries: initialEntries, onBack, onDon
       setStep({ name: 'review' })
     } catch (err) {
       setError(
-        `${err instanceof Error ? err.message : 'Не удалось завершить категоризацию.'} ` +
-          'Уже обработанные записи сохранены, можно продолжить.',
+        t.categorize.runError(err instanceof Error ? err.message : t.categorize.runErrorFallback),
       )
       setStep({ name: 'intro' })
     }
@@ -67,14 +66,13 @@ export function CategorizeScreen({ vault, entries: initialEntries, onBack, onDon
   return (
     <div className="space-y-8">
       <Button variant="ghost" onClick={onBack} disabled={step.name === 'running' || step.name === 'finishing'}>
-        ← К дневнику
+        {t.common.backToJournal}
       </Button>
 
       <header className="space-y-3">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Разложить дневник по темам</h1>
+        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{t.categorize.title}</h1>
         <p className="leading-relaxed text-ink-soft">
-          Модель распределит записи по темам и подскажет, какие похожи на мусор: тестовые, случайные,
-          списки покупок. Ничего не удаляется без вашего подтверждения.
+          {t.categorize.lead}
         </p>
       </header>
 
@@ -95,7 +93,7 @@ export function CategorizeScreen({ vault, entries: initialEntries, onBack, onDon
               if (toKeep.length > 0) await updateEntries(vault, toKeep.map((entry) => ({ ...entry, junkReason: null })))
               onDone()
             } catch (err) {
-              setError(err instanceof Error ? err.message : 'Не удалось сохранить изменения.')
+              setError(err instanceof Error ? err.message : t.categorize.saveError)
               setStep({ name: 'review' })
             }
           }}
@@ -106,6 +104,7 @@ export function CategorizeScreen({ vault, entries: initialEntries, onBack, onDon
 }
 
 function Intro({ pending, total, onStart }: { pending: number; total: number; onStart: () => void }) {
+  const { t } = useI18n()
   const batches = Math.ceil(pending / MAX_ENTRIES_PER_CATEGORIZE)
   const minutes = Math.max(1, Math.round((batches * SECONDS_PER_BATCH) / 60))
 
@@ -114,28 +113,27 @@ function Intro({ pending, total, onStart }: { pending: number; total: number; on
       <div className="space-y-4 rounded-3xl bg-card p-6">
         <p className="font-serif text-xl">
           {pending === total
-            ? `${pending} ${entriesWord(pending)}`
-            : `Осталось ${pending} из ${total}: остальные уже разложены`}
+            ? t.common.entries(pending)
+            : t.categorize.remaining(pending, total)}
         </p>
         <ul className="flex flex-wrap gap-2">
-          {Object.values(CATEGORIES).map((label) => (
+          {Object.values(t.labels.categories).map((label) => (
             <li key={label} className="rounded-full bg-sand px-3 py-1 text-sm">
               {label}
             </li>
           ))}
         </ul>
         <p className="text-sm leading-relaxed text-ink-soft">
-          Займёт около {minutes} {pluralRu(minutes, ['минуты', 'минут', 'минут'])}. Записи по очереди, пачками по{' '}
-          {MAX_ENTRIES_PER_CATEGORIZE}, отправляются модели: начало каждой записи, без фото. Текст не сохраняется
-          на сервере, а темы шифруются и хранятся вместе с записями. Каждая запись обрабатывается один раз.
+          {t.categorize.info(minutes, MAX_ENTRIES_PER_CATEGORIZE)}
         </p>
       </div>
-      <Button onClick={onStart}>Начать</Button>
+      <Button onClick={onStart}>{t.categorize.start}</Button>
     </div>
   )
 }
 
 function Running({ progress }: { progress: CategorizeProgress }) {
+  const { t } = useI18n()
   const percent = Math.round((progress.done / Math.max(progress.total, 1)) * 100)
   return (
     <div className="space-y-3 rounded-3xl bg-card p-6" role="status" aria-live="polite">
@@ -143,9 +141,9 @@ function Running({ progress }: { progress: CategorizeProgress }) {
         <div className="h-full rounded-full bg-sage transition-[width] duration-700" style={{ width: `${percent}%` }} />
       </div>
       <p className="text-sm text-ink-soft">
-        Пачка {progress.batch} из {progress.batches} · готово {progress.done} из {progress.total}
+        {t.categorize.batch(progress.batch, progress.batches, progress.done, progress.total)}
       </p>
-      <p className="text-sm text-ink-soft">Не закрывайте вкладку. Каждая пачка сохраняется сразу.</p>
+      <p className="text-sm text-ink-soft">{t.categorize.keepTab}</p>
     </div>
   )
 }
@@ -157,6 +155,7 @@ interface ReviewProps {
 }
 
 function Review({ entries, busy, onFinish }: ReviewProps) {
+  const { t } = useI18n()
   const junk = useMemo(() => entries.filter(isJunkCandidate), [entries])
   const counts = useMemo(() => {
     const result = new Map<CategoryId, number>()
@@ -190,11 +189,11 @@ function Review({ entries, busy, onFinish }: ReviewProps) {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <h2 className="font-serif text-2xl">Темы</h2>
+        <h2 className="font-serif text-2xl">{t.categorize.topics}</h2>
         <ul className="space-y-3">
           {counts.map(([id, n]) => (
             <li key={id} className="grid grid-cols-[9rem_1fr_2.5rem] items-center gap-3 text-sm sm:grid-cols-[11rem_1fr_3rem]">
-              <span>{CATEGORIES[id]}</span>
+              <span>{t.labels.categories[id]}</span>
               <span className="h-2 overflow-hidden rounded-full bg-sand">
                 <span className="block h-full rounded-full bg-clay" style={{ width: `${(n / max) * 100}%` }} />
               </span>
@@ -206,11 +205,11 @@ function Review({ entries, busy, onFinish }: ReviewProps) {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="font-serif text-2xl">Похоже на мусор</h2>
+          <h2 className="font-serif text-2xl">{t.categorize.junk}</h2>
           <p className="text-sm text-ink-soft">
             {junk.length === 0
-              ? 'Модель не нашла записей, которые стоит удалить.'
-              : 'Отметьте те, что действительно можно удалить. Остальные останутся и больше не будут предлагаться.'}
+              ? t.categorize.noJunk
+              : t.categorize.junkHint}
           </p>
         </div>
 
@@ -240,24 +239,23 @@ function Review({ entries, busy, onFinish }: ReviewProps) {
 
       {confirming && (
         <Notice tone="error">
-          Удалить {selected.size} {entriesWord(selected.size)} навсегда? Восстановить их не получится, и при повторном
-          импорте они не вернутся.
+          {t.categorize.confirmDelete(selected.size)}
         </Notice>
       )}
 
       <div className="flex flex-wrap items-center gap-4">
         <Button onClick={finish} disabled={busy}>
           {busy
-            ? 'Сохраняю…'
+            ? t.categorize.saving
             : selected.size === 0
-              ? 'Готово'
+              ? t.categorize.done
               : confirming
-                ? `Да, удалить ${selected.size}`
-                : `Удалить выбранные (${selected.size})`}
+                ? t.categorize.confirmYes(selected.size)
+                : t.categorize.deleteSelected(selected.size)}
         </Button>
         {confirming && (
           <Button variant="ghost" onClick={() => setConfirming(false)}>
-            Отмена
+            {t.common.cancel}
           </Button>
         )}
       </div>

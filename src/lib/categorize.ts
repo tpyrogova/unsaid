@@ -11,6 +11,7 @@ import {
   MAX_CATEGORIZE_TEXT_LENGTH,
   MAX_ENTRIES_PER_CATEGORIZE,
 } from '../../shared/categories'
+import { getLang } from '../i18n'
 import type { JournalEntry } from '../types/journal'
 import type { VaultKeys } from './crypto'
 import { apiRequest } from './http'
@@ -60,7 +61,7 @@ export async function categorizeJournal(
 
     const { results } = await apiRequest('/api/categorize', {
       method: 'POST',
-      body: { entries: batch.map((entry) => ({ id: entry.id, text: textForModel(entry) })) },
+      body: { lang: getLang(), entries: batch.map((entry) => ({ id: entry.id, text: textForModel(entry) })) },
       schema: categorizeResponseSchema,
     })
 

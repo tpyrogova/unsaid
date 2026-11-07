@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useI18n } from '../i18n'
 import { logIn, MIN_PASSWORD_LENGTH, signUp, type UnlockedSession } from '../lib/auth'
 import { Button } from './Button'
 import { Notice } from './Notice'
@@ -10,12 +11,14 @@ interface AuthFormProps {
   initialMode: AuthMode
   initialEmail?: string
   onAuthenticated: (session: UnlockedSession) => void
-  /** Overrides the submit label for sign-up (e.g. "Зашифровать и сохранить"). */
+  /** Overrides the submit label for sign-up (e.g. "Encrypt and save"). */
   signupLabel?: string
 }
 
 /** Login / sign-up form. Used on its own screen and inline in the import flow. */
-export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, signupLabel = 'Создать аккаунт' }: AuthFormProps) {
+export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, signupLabel }: AuthFormProps) {
+  const { t } = useI18n()
+  const a = t.auth
   const [mode, setMode] = useState<AuthMode>(initialMode)
   const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
@@ -28,9 +31,9 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
 
   function validate(): string | null {
     if (!isSignup) return null
-    if (password.length < MIN_PASSWORD_LENGTH) return `Пароль должен быть не короче ${MIN_PASSWORD_LENGTH} символов.`
-    if (password !== confirm) return 'Пароли не совпадают.'
-    if (!acceptedNoRecovery) return 'Подтвердите, что понимаете: пароль нельзя восстановить.'
+    if (password.length < MIN_PASSWORD_LENGTH) return a.tooShort(MIN_PASSWORD_LENGTH)
+    if (password !== confirm) return a.mismatch
+    if (!acceptedNoRecovery) return a.acceptRequired
     return null
   }
 
@@ -48,7 +51,7 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
       const session = isSignup ? await signUp(email, password) : await logIn(email, password)
       onAuthenticated(session)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не получилось. Попробуйте ещё раз.')
+      setError(err instanceof Error ? err.message : a.genericError)
       setBusy(false)
     }
   }
@@ -71,14 +74,14 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
             onClick={() => switchMode(tab)}
             className={`rounded-full px-5 py-2 transition-colors ${mode === tab ? 'bg-card font-medium shadow-sm' : 'text-ink-soft hover:text-ink'}`}
           >
-            {tab === 'login' ? 'Вход' : 'Регистрация'}
+            {tab === 'login' ? a.login : a.signup}
           </button>
         ))}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         <TextField
-          label="Email"
+          label={a.email}
           type="email"
           autoComplete="email"
           required
@@ -86,12 +89,12 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
           onChange={(e) => setEmail(e.target.value)}
         />
         <TextField
-          label="Пароль"
+          label={a.password}
           type="password"
           autoComplete={isSignup ? 'new-password' : 'current-password'}
           required
           minLength={isSignup ? MIN_PASSWORD_LENGTH : undefined}
-          hint={isSignup ? `Минимум ${MIN_PASSWORD_LENGTH} символов. Длинная фраза надёжнее сложного слова.` : undefined}
+          hint={isSignup ? a.passwordHint(MIN_PASSWORD_LENGTH) : undefined}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -99,7 +102,7 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
         {isSignup && (
           <>
             <TextField
-              label="Пароль ещё раз"
+              label={a.passwordAgain}
               type="password"
               autoComplete="new-password"
               required
@@ -114,8 +117,7 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
                 className="mt-1 size-4 shrink-0 accent-clay"
               />
               <span>
-                Я понимаю: пароль — единственный ключ к записям. Если я его забуду, восстановить дневник
-                не сможет никто, включая разработчиков.
+                {a.noRecovery}
               </span>
             </label>
           </>
@@ -124,7 +126,7 @@ export function AuthForm({ initialMode, initialEmail = '', onAuthenticated, sign
         {error && <Notice tone="error">{error}</Notice>}
 
         <Button type="submit" disabled={busy} className="w-full sm:w-auto">
-          {busy ? 'Готовлю ключи шифрования…' : isSignup ? signupLabel : 'Войти'}
+          {busy ? a.preparingKeys : isSignup ? (signupLabel ?? a.createAccount) : a.logIn}
         </Button>
       </form>
     </div>

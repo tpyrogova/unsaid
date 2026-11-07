@@ -8,7 +8,10 @@ import {
   type PeriodId,
 } from '../../shared/analysis'
 import type { CategoryId } from '../../shared/categories'
-import mockReview from '../mocks/analysis.json'
+import mockReviewEn from '../mocks/analysis.en.json'
+import mockReviewRu from '../mocks/analysis.json'
+import { SAMPLE_ENTRY_EN } from '../mocks/sampleEntry'
+import { dict } from '../i18n'
 import type { JournalEntry } from '../types/journal'
 import { apiRequest } from './http'
 
@@ -24,15 +27,16 @@ export interface AnalyzeOptions {
 
 /** Careful review of a single entry. */
 export async function analyzeEntry(text: string, options: AnalyzeOptions = {}): Promise<AnalyzeResponse> {
-  if (text.trim().length === 0) throw new Error('Запись пустая, разбирать пока нечего.')
+  if (text.trim().length === 0) throw new Error(dict().api.emptyEntry)
 
   if (options.demo) {
     await delay(MOCK_LATENCY_MS, options.signal)
-    const review = mockReview as EntryReview
+    // The mock matches the sample entry in its language (quotes are verbatim).
+    const review = (text.trim() === SAMPLE_ENTRY_EN ? mockReviewEn : mockReviewRu) as EntryReview
     return {
       kind: 'review',
       review,
-      meta: { model: 'demo (мок)', safetyLevel: 0, ungroundedDropped: 0, entriesUsed: 1 },
+      meta: { model: dict().api.demoModel, safetyLevel: 0, ungroundedDropped: 0, entriesUsed: 1 },
     }
   }
 

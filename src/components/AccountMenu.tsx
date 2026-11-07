@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../i18n'
 
 interface AccountMenuProps {
   email: string
@@ -9,6 +10,7 @@ interface AccountMenuProps {
 
 /** Account dropdown in the top-right corner. Closes on outside click and Escape. */
 export function AccountMenu({ email, onOpenJournal, onOpenSettings, onLogOut }: AccountMenuProps) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const root = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLButtonElement>(null)
@@ -47,7 +49,7 @@ export function AccountMenu({ email, onOpenJournal, onOpenSettings, onLogOut }: 
         type="button"
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Меню аккаунта"
+        aria-label={t.menu.label}
         onClick={() => setOpen((value) => !value)}
         className="flex size-11 items-center justify-center rounded-full bg-clay-soft font-serif text-lg text-clay-deep uppercase transition-colors hover:bg-clay hover:text-card focus-visible:ring-4 focus-visible:ring-clay/25 focus-visible:outline-none aria-expanded:bg-clay aria-expanded:text-card"
       >
@@ -61,14 +63,14 @@ export function AccountMenu({ email, onOpenJournal, onOpenSettings, onLogOut }: 
         >
           <p className="truncate px-4 pt-2 pb-3 text-xs text-ink-soft">{email}</p>
           <button role="menuitem" type="button" className={item} onClick={choose(onOpenJournal)}>
-            Мой дневник
+            {t.menu.journal}
           </button>
           <button role="menuitem" type="button" className={item} onClick={choose(onOpenSettings)}>
-            Настройки аккаунта
+            {t.menu.settings}
           </button>
           <div className="my-1 border-t border-line" />
           <button role="menuitem" type="button" className={`${item} text-ink-soft`} onClick={choose(onLogOut)}>
-            Выйти
+            {t.menu.logout}
           </button>
         </div>
       )}

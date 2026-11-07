@@ -7,7 +7,7 @@ import { requireUser } from '../../../server/session'
 export const onRequestDelete: PagesFunction<Env> = async ({ request, env, params }) => {
   const user = await requireUser(request, env)
   const id = entryIdSchema.safeParse(params.id)
-  if (!id.success) throw new HttpError(400, 'Некорректный id записи')
+  if (!id.success) throw new HttpError(400, 'invalidEntryId')
 
   await deleteEntries(env, user.id, [id.data])
   return json({ ok: true })

@@ -1,179 +1,181 @@
 # Unsaid
 
-Бережный психологический разбор записей из личного дневника. Приложение показывает:
+A gentle, privacy-first reflection tool for personal journals. Upload your iPhone Journal export (or write right in the app), and Unsaid shows how your thoughts change over time: whether you are growing or circling around the same place, and what you might not notice from the inside.
 
-- **эмоции** и их интенсивность;
-- **неудовлетворённые потребности**;
-- **когнитивные искажения** в формате «цитата → переформулировка»;
-- **повторяющиеся сценарии** поведения;
-- **один мягкий вопрос** для саморефлексии.
+Core principle: **observations, not diagnoses.** Every observation about feelings or thinking traps is anchored to a verbatim quote from your own entry, and quotes that are not actually in the text are discarded automatically.
 
-Главный принцип: **наблюдения, а не диагнозы**. Каждый вывод опирается на дословную цитату из записи.
+The UI is available in **English and Russian** (switch in the header). Reviews are written in the language of the entries.
 
-Возможности:
+## Features
 
-- аккаунт по email и паролю;
-- импорт экспорта из «Дневника» Apple (Journal);
-- хранение записей со **сквозным шифрованием**: сервер не может их прочитать;
-- **«Анализировать»**: бережный разбор за выбранный период (неделя, месяц, 3 месяца, полгода, год, всё время) по нашему методу или в выбранной рамке (КПТ, схема-терапия, привязанность), с фокусом своими словами и блоком «Что меняется»;
-- **свои записи с датой** прямо в приложении; повторная загрузка экспорта добавляет только новые записи и ничего не перезаписывает;
-- **категоризация дневника** по темам и поиск мусорных записей с удалением после подтверждения;
-- демо-режим без аккаунта.
+- **Email + password accounts** with **end-to-end encryption**: the server stores only ciphertext and cannot read the journal.
+- **iPhone Journal import**: the export zip is parsed in the browser; re-uploading a newer export adds only new entries and never overwrites existing ones.
+- **Your own entries with any date**, written directly in the app.
+- **Careful review** of a single entry or of a **period** (7 days, 30 days, 3 months, half a year, a year, all time), following [`prompts/careful-review.md`](prompts/careful-review.md):
+  heard → feelings & needs → thinking traps → noticed pattern → one question for yourself → small steps, plus **"What is changing"** for a period.
+- **Method**: "our method" lets the model pick one framework (CBT, schema therapy or attachment) and explain why; you can also pick one yourself and add a focus in your own words.
+- **Safety protocol**: a separate risk check runs before every review; in a crisis, the review is replaced by a fixed message and help contacts from config.
+- **Categorization** into 7 fixed topics, with junk-entry suggestions that are deleted only after confirmation.
+- **Account settings**: clear the journal or delete the account and all data (password confirmation required).
+- **Demo mode** without an account (mocked review, no network).
 
-Разбор делает **Qwen (`@cf/qwen/qwen3.8-27b`) на Cloudflare Workers AI**. В демо-режиме без аккаунта используется мок.
+Reviews and categorization are powered by **Qwen (`@cf/qwen/qwen3.8-27b`) on Cloudflare Workers AI**.
 
-## Стек
+## Stack
 
 - Vite + React + TypeScript (strict), Tailwind CSS v4
-- Cloudflare Pages + Pages Functions (`functions/`) + D1 (SQLite) + Workers AI (Qwen)
-- Web Crypto API (PBKDF2, HKDF, AES-GCM), zod для контракта API, fflate для zip
-- Vitest: тесты шифрования, парсера и API (на настоящей SQLite через `node:sqlite`)
+- Cloudflare Pages + Pages Functions (`functions/`) + D1 (SQLite) + Workers AI
+- Web Crypto API (PBKDF2, HKDF, AES-GCM), zod for the API contract, fflate for zip
+- Vitest: crypto, importer, prompt and API tests (API tests run on real SQLite via `node:sqlite`)
 
-## Запуск
+## Getting started
 
-Нужны Node ≥ 22.5 и **npm ≥ 11**: в npm 10.9 есть баг (`Cannot read properties of null (reading 'edgesOut')`) с peer-зависимостями vitest 5. Если обновлять npm не хочется, ставьте зависимости через `npx npm@11 install`.
+Requires Node ≥ 22.5 and **npm ≥ 11**: npm 10.9 has a bug (`Cannot read properties of null (reading 'edgesOut')`) with vitest 5 peer dependencies. If you don't want to upgrade npm, install with `npx npm@11 install`.
 
 ```bash
 npm install
-cp .dev.vars.example .dev.vars   # и впишите случайную строку в SALT_SECRET
-npx wrangler login               # Workers AI работает удалённо даже в dev
-npm run db:migrate:local         # схема в локальной D1 (.wrangler/)
+cp .dev.vars.example .dev.vars   # put a long random string into SALT_SECRET
+npx wrangler login               # Workers AI runs remotely even in dev
+npm run db:migrate:local         # schema in the local D1 (.wrangler/)
 
-npm run dev:api   # Pages Functions + D1 на :8788
-npm run dev       # фронтенд на http://localhost:5173 (проксирует /api на :8788)
+npm run dev:api   # Pages Functions + D1 on :8788
+npm run dev       # frontend on http://localhost:5173 (proxies /api to :8788)
 ```
 
-Проверки:
+Remote AI bindings in `wrangler pages dev` also require a registered `workers.dev` subdomain on your Cloudflare account.
+
+Checks:
 
 ```bash
 npm test          # vitest
-npm run typecheck # tsc для фронтенда, функций и тестов
+npm run typecheck # tsc for frontend, functions and tests
 npm run lint
-npm run build     # сборка в dist/
+npm run build     # production build into dist/
 ```
 
-### Деплой на Cloudflare Pages
+### Deploying to Cloudflare Pages
 
 ```bash
-wrangler d1 create unsaid                 # вписать database_id в wrangler.toml
+wrangler d1 create unsaid                 # put the database_id into wrangler.toml
 wrangler d1 migrations apply unsaid --remote
 wrangler pages secret put SALT_SECRET
 ```
 
-Настройки сборки: команда `npm run build`, папка `dist`, D1-биндинг `DB`.
+Build settings: command `npm run build`, output directory `dist`, D1 binding `DB`, AI binding `AI`.
 
-## Структура
+## Project structure
 
 ```
-shared/contract.ts        # zod-схемы API, общие для клиента и сервера
-functions/api/            # Pages Functions: auth/*, entries/*
-server/                   # сессии, хэширование, rate limit, http-хелперы
-migrations/               # схема D1
-src/lib/crypto.ts         # иерархия ключей и шифрование записей
-src/lib/importers/        # парсер экспорта Apple Journal (+ синтетическая фикстура)
-src/lib/journal.ts        # шифрование → загрузка, скачивание → расшифровка
-prompts/careful-review.md # ИНСТРУКЦИИ бережного разбора: системный промпт, словарь запретов, протокол безопасности
-config/crisis-contacts.ts # контакты кризисной помощи (не генерируются моделью)
-scripts/build-prompts.mjs # встраивает prompts/*.md в server/generated/ перед запуском и сборкой
-shared/analysis.ts        # zod-схема разбора (5 блоков + «Что меняется»): типы, JSON Schema, валидация
-server/qwen.ts            # общий вызов Qwen: JSON Schema, разбор ответа, повторная попытка
-server/carefulPrompt.ts   # собирает промпт из разделов careful-review.md
-server/safety.ts          # отдельная проверка риска перед разбором
-server/analysis.ts        # разбор записи или периода и проверка цитат
-server/categorize.ts      # категоризация пачки записей
-shared/categories.ts      # фиксированный список тем и контракт категоризации
-src/lib/categorize.ts     # пачки, сохранение после каждой, «каждая запись один раз»
-src/lib/api.ts            # analyzeEntry(): /api/analyze или мок в демо-режиме
-src/screens/              # Auth, Unlock, Journal, Import, EntryDetail, Write, Analysis
-tests/                    # тесты API с D1-адаптером над node:sqlite
+prompts/careful-review.md # careful-review INSTRUCTIONS: system prompt, wording rules, safety protocol
+config/crisis-contacts.ts # crisis help contacts (never generated by the model)
+scripts/build-prompts.mjs # embeds prompts/*.md into server/generated/ before dev, build and tests
+shared/contract.ts        # zod API schemas shared by client and server
+shared/analysis.ts        # review schema (blocks + "What is changing"): types, JSON Schema, validation
+shared/categories.ts      # fixed topic list and categorization contract
+functions/api/            # Pages Functions: auth/*, entries/*, analyze, categorize, journal, account
+server/qwen.ts            # structured Qwen calls: JSON Schema, tolerant parsing, retry, quota handling
+server/carefulPrompt.ts   # builds prompts from careful-review.md sections
+server/safety.ts          # separate risk check before any review
+server/analysis.ts        # entry / period review and quote grounding
+server/categorize.ts      # batch categorization
+server/messages.ts        # API error messages in English and Russian
+migrations/               # D1 schema
+src/i18n/                 # UI dictionaries (en, ru) and language provider
+src/lib/crypto.ts         # key hierarchy and entry encryption
+src/lib/importers/        # iPhone Journal export parser (+ synthetic fixture)
+src/lib/journal.ts        # encrypt → upload, download → decrypt
+src/lib/categorize.ts     # batches, save after each one, "each entry once"
+src/lib/api.ts            # reviews: /api/analyze or the mock in demo mode
+src/screens/              # Landing, Auth, Unlock, Journal, Import, Write, Analyze, Categorize, Settings
+tests/                    # API tests with a D1 adapter over node:sqlite
 ```
 
-## Инструкции бережного разбора
+## Careful-review instructions
 
-Все разборы (одной записи и за период) строятся по [`prompts/careful-review.md`](prompts/careful-review.md). Это единственный источник правды, его можно редактировать:
+All reviews are built from [`prompts/careful-review.md`](prompts/careful-review.md) (written in Russian). It is the single source of truth and is meant to be edited:
 
-- **Системный промпт** берётся из блока ` ```text ` в разделе «Системный промпт». Плейсхолдеры `{framework}` и `{crisis_contacts}` подставляет код.
-- **Раздел «Язык: запреты и замены»** добавляется к промпту как словарь формулировок.
-- **Отличия приложения от структуры в md** заданы в коде (`APP_FORMAT` в `server/carefulPrompt.ts`): вопрос себе ровно один (в md 2–3), и добавлен блок «Ловушки мышления» (0–2 пункта: тип, дословная цитата, бережная переформулировка). Цитаты ловушек проверяются так же, как цитаты чувств. Если хотите, чтобы md оставался полной спецификацией, внесите эти два пункта в его таблицу «Структура разбора».
-- **Раздел «Протокол безопасности»** — инструкция для отдельного классификатора риска, который вызывается до разбора. Уровень 2 (кризис) заменяет разбор фиксированным текстом и контактами из `config/crisis-contacts.ts`. Для периода уровень 2 ставится только по записям за последние 14 дней. Срабатывания уровней 1–2 логируются в `safety_events` без текста.
+- **System prompt** comes from the ` ```text ` block in the «Системный промпт» section. The code fills in `{framework}` and `{crisis_contacts}`.
+- **«Язык: запреты и замены»** (wording: forbidden → allowed) is appended to the prompt as a phrasing guide.
+- **App-specific differences** from the md structure live in code (`APP_FORMAT` in `server/carefulPrompt.ts`): exactly one question for yourself (the md says 2–3), and an extra **thinking traps** block (0–2 items: type, verbatim quote, gentle reframe). Trap quotes are grounded just like feeling quotes.
+- **«Протокол безопасности»** (safety protocol) instructs a separate risk classifier that runs before the review. Level 2 (crisis) replaces the review with a fixed message and contacts from `config/crisis-contacts.ts`. For a period, level 2 is assigned only for entries from the last 14 days. Level 1–2 triggers are logged in `safety_events` without any text.
 
-После правки md перезапустите `npm run dev:api` (или выполните `npm run prompts`): Pages Functions не умеют загружать `.md`, поэтому файл встраивается в `server/generated/` перед запуском, сборкой и тестами. Если правка удалит то, на что опирается код (заголовки разделов, блок ` ```text `, плейсхолдеры), `npm run prompts` остановится с понятной ошибкой.
+After editing the md, restart `npm run dev:api` (or run `npm run prompts`): Pages Functions cannot load `.md` files, so the file is embedded into `server/generated/` before dev, build and tests. If an edit removes something the code relies on (section headings, the ` ```text ` block, placeholders), `npm run prompts` stops with a clear error.
 
-Замеры на синтетике (Qwen 3.8 27B, Workers AI):
+Measurements on synthetic data (Qwen 3.8 27B, Workers AI):
 
-| | Время | Нейроны |
+| | Time | Neurons |
 |---|---|---|
-| Проверка риска | 1,5–2 с | 40–80 |
-| Разбор записи («размышления» low) | ~35 с | ~550 |
-| Разбор периода, 29 записей («размышления» выкл.) | ~15 с | ~310 |
+| Risk check | 1.5–2 s | 40–80 |
+| Entry review (thinking: low) | ~35 s | ~550 |
+| Period review, 29 entries (thinking: off) | ~15 s | ~310 |
+| Categorization, batch of 30 (thinking: off) | ~26 s | ~320 |
 
-С «размышлениями» разбор периода шёл 88–98 с и упирался в лимит токенов, а это обрыв по таймауту Cloudflare (~100 с). Поэтому для периода они выключены. Цена — чуть менее точные формулировки (см. «Разбор ошибок» ниже).
+With thinking enabled, a period review took 88–98 s and hit the token limit, which means a timeout behind Cloudflare's ~100 s proxy limit. So thinking is off for periods; the cost is slightly less precise wording (see below).
 
-### Разбор ошибок (первые находки)
+### Error analysis (first findings)
 
-- **Термин рамки как ярлык.** В разборе периода без «размышлений» модель написала «стоит схема „Дефективность/стыд“». Инструкция запрещает ярлыки, а это термин схема-терапии без оговорки.
-- **Неточность в «Услышано».** «Начинаешь терапию» — в синтетической записи речь об антидепрессантах по назначению врача.
-- **Совет на грани.** «Попробовать сказать: „Мне было приятно, что ты написала“» близко к поведенческому совету в отношениях, который инструкция не рекомендует.
+- **Framework term used as a label.** Without thinking, a period review said the author "has the Defectiveness/Shame schema". The instructions forbid labels; this is a schema-therapy term without a caveat.
+- **Inaccuracy in "Heard".** "You are starting therapy", while the synthetic entry mentioned antidepressants prescribed by a doctor.
+- **Borderline advice.** "Try saying: 'I was glad you texted'" is close to behavioral relationship advice, which the instructions discourage.
 
-## Модель приватности
+## Privacy model
 
-### Ключи
+### Keys
 
 ```
-пароль ──PBKDF2-SHA256, 600k, kdfSalt──► master
-master ──HKDF("auth")──► authKey        → на сервер (сервер хранит SHA-256(salt‖authKey))
-master ──HKDF("wrap")──► wrappingKey    остаётся в браузере
-wrappingKey ──AES-GCM──► wrapped DEK    → на сервер
-DEK (случайный, 256 бит) ──AES-GCM──► записи → на сервер
+password ──PBKDF2-SHA256, 600k, kdfSalt──► master
+master ──HKDF("auth")──► authKey        → server (stores SHA-256(salt‖authKey))
+master ──HKDF("wrap")──► wrappingKey    stays in the browser
+wrappingKey ──AES-GCM──► wrapped DEK    → server
+DEK (random, 256 bit) ──AES-GCM──► entries → server
 ```
 
-- **Пароль не покидает браузер.** Сервер получает только `authKey`: из него нельзя получить ни пароль, ни `wrappingKey`.
-- **Ключ данных (DEK) случайный.** Он хранится на сервере только в зашифрованном виде. Поэтому для будущей смены пароля достаточно перешифровать один ключ, а не все записи.
-- **Ключи живут только в памяти вкладки** как non-extractable `CryptoKey`: их нельзя экспортировать, и они никуда не сохраняются. После перезагрузки дневник «закрыт», пароль нужно ввести снова. Разблокировка проверяется локально (тег AES-GCM), без запроса к серверу.
-- **Id записи привязан к шифротексту** через AAD (associated data в AES-GCM). Сервер не может незаметно подменить одну запись другой.
-- **Id импортированных записей** — это HMAC от имени исходного файла на ключе пользователя. Повторный импорт не создаёт дублей, при этом id ничего не говорит о содержимом.
+- **The password never leaves the browser.** The server receives only `authKey`, from which neither the password nor `wrappingKey` can be derived.
+- **The data key (DEK) is random** and stored on the server only in wrapped form, so a future password change only needs to re-wrap one key.
+- **Keys live only in tab memory** as non-extractable `CryptoKey`s. After a reload the journal is "locked" and needs the password again; unlocking is verified locally (AES-GCM tag) without a server round-trip.
+- **The entry id is bound to the ciphertext** as AES-GCM associated data, so the server cannot silently swap entries.
+- **Imported entry ids** are an HMAC of the source file name under the user's key: re-imports create no duplicates, and the id reveals nothing about content.
+- **Irreversible actions** (clear journal, delete account) re-check the password via a re-derived `authKey`, with the same rate limit as login.
 
-### Что видит сервер
+### What the server sees
 
-| Видит                                   | Не видит                              |
-| --------------------------------------- | ------------------------------------- |
-| email, время регистрации                | пароль                                |
-| число записей, их размер, время загрузки | текст, заголовки, даты записей        |
-| IP-адреса запросов (на уровне Cloudflare) | ключ шифрования                       |
+| Sees                                        | Does not see                      |
+| ------------------------------------------- | --------------------------------- |
+| email, sign-up time                         | password                          |
+| number of entries, their size, upload time  | text, titles, entry dates, topics |
+| request IP addresses (at the Cloudflare level) | encryption keys                |
 
-### Импорт
+### Import
 
-Zip-архив читается **в браузере**. Распаковываются только `Entries/*.html`, фото и видео пропускаются без распаковки. На сервер уходят уже зашифрованные записи.
+The zip is read **in the browser**. Only `Entries/*.html` are decompressed; photos and videos are skipped without being inflated. Only encrypted entries are uploaded.
 
-### Компромиссы (осознанные)
+### Deliberate trade-offs
 
-- **Пароль нельзя восстановить.** При регистрации пользователь явно это подтверждает.
-- **Регистрация раскрывает, занят ли email** (ответ 409). `/prelogin` на неизвестный email отдаёт подставную соль, но для полной защиты от перебора email нужна верификация почты.
-- **Серверный хэш `authKey` — один SHA-256 с солью.** Основную вычислительную стоимость перебора задаёт PBKDF2 на клиенте (600k итераций). Второй медленный KDF упирается в лимиты CPU у Workers.
-- **Rate limit входа:** 10 неудачных попыток за 15 минут на один email. Лимита по IP пока нет.
+- **The password cannot be recovered.** Users explicitly confirm this at sign-up.
+- **Sign-up reveals whether an email is taken** (409). `/prelogin` returns a decoy salt for unknown emails, but full protection against email enumeration requires email verification.
+- **The server-side hash of `authKey` is a single salted SHA-256.** Brute-force cost comes from the client-side PBKDF2 (600k iterations); a second slow KDF would hit Workers CPU limits.
+- **Login rate limit:** 10 failed attempts per 15 minutes per email. No per-IP limit yet.
+- **Re-importing never overwrites**: if an entry was edited in the iPhone app after the first import, the earlier version stays in Unsaid.
 
-### Анализ
+### Reviews
 
-- **Запускается явно** кнопкой «Разобрать», для одной записи. Расшифрованный текст на время запроса уходит в Worker, а оттуда в Workers AI.
-- **Ничего не хранится.** Worker не логирует и не сохраняет текст. По [политике Cloudflare](https://developers.cloudflare.com/workers-ai/platform/data-usage/) у Workers AI нулевое хранение данных и нет обучения на содержимом запросов. Ключ API не нужен: модель подключена биндингом.
-- **Модель не может выдумать цитату.** Ответ запрашивается строго по JSON Schema, которая генерируется из той же zod-схемы, что и типы. Затем ответ проходит валидацию, а каждое наблюдение проверяется на то, что его цитата действительно есть в тексте. Неподтверждённые пункты отбрасываются, их число показывается под разбором.
-- **Лимит:** 20 разборов в сутки на пользователя. Бесплатная квота Workers AI (10 000 нейронов в день) общая на всё приложение. Один разбор записи среднего размера стоит около 590 нейронов, то есть бесплатно выходит примерно 17 разборов в сутки. Ответ приходит примерно за 45 секунд.
-- **Демо без аккаунта** работает на моке и ничего не отправляет в сеть.
+- **Run explicitly** by the user. The decrypted text of the selected entries goes to the Worker and on to Workers AI for the duration of the request.
+- **Nothing is stored.** The Worker neither logs nor stores text. Per [Cloudflare's policy](https://developers.cloudflare.com/workers-ai/platform/data-usage/), Workers AI has zero data retention and does not train on customer content. No API key is needed: the model is a binding.
+- **The model cannot invent quotes.** Output is requested strictly by a JSON Schema generated from the same zod schema as the types, then validated, and every quote is checked against the source text.
+- **Limits:** 20 entry reviews and 5 period reviews per user per day. The free Workers AI quota (10,000 neurons/day) is shared by the whole app; when it runs out, users see a clear message.
+- **Demo mode** uses a mock and sends nothing over the network.
 
-### Категоризация
+### Categorization
 
-Кнопка «Категоризировать» раскладывает записи по 7 фиксированным темам и предлагает, что удалить как мусор.
+- **Each entry is processed once.** The topic is stored inside the encrypted entry (`categorizedAt`); later runs send only new entries.
+- **Batches of 30**, each saved right after the response, so an interrupted run loses nothing.
+- **Token-efficient:** only the first 1,500 characters of an entry, numbered entries instead of 32-character ids, compact output, topics constrained by a JSON Schema enum, thinking off. 29 of 30 correct on a synthetic set; a ~160-entry journal costs about 1,700 neurons.
+- **Junk is never deleted automatically.** Deleted ids are remembered (`deleted_entries`), so re-importing the same export does not bring them back. Limit: 400 entries per user per day.
 
-- **Каждая запись обрабатывается один раз.** Тема хранится внутри зашифрованной записи (`categorizedAt`), повторный запуск отправляет модели только новые записи.
-- **Пачки по 30 записей**, каждая сохраняется сразу после ответа. Если процесс прервётся, сделанное не пропадёт.
-- **Экономно.** Модели уходят только первые 1500 символов записи, записи пронумерованы вместо 32-символьных id, ответ компактный, а тема ограничена enum в JSON Schema. «Размышления» модели отключены (`enable_thinking: false`): на пачке из 30 записей это 26 с и около 320 нейронов вместо 48–84 с и 700 нейронов при той же точности (29 из 30 на синтетическом наборе). Дневник из 160 записей стоит около 1700 нейронов.
-- **Мусор не удаляется автоматически.** Пользователь отмечает записи галочками и подтверждает удаление. Удалённые id запоминаются (`deleted_entries`), поэтому повторный импорт того же экспорта их не вернёт. Записи, которые пользователь решил оставить, больше не предлагаются.
-- **Лимит:** 400 записей в сутки на пользователя.
+### Repository
 
-### Репозиторий
+Only synthetic data is committed. `.gitignore` covers `private/` (for real exports), `.env*`, `.dev.vars`, `.wrangler/` (local D1) and `server/generated/`.
 
-В git только синтетические данные. В `.gitignore` добавлены папка `private/` (для реальных экспортов), `.env*`, `.dev.vars` и `.wrangler/` (локальная D1).
+## Disclaimer
 
-## Дисклеймер
-
-Unsaid — инструмент для саморефлексии. Он не заменяет психолога или психотерапевта и не ставит диагнозов.
+Unsaid is a self-reflection tool. It does not replace a psychologist or psychotherapist and does not diagnose.

@@ -23,21 +23,25 @@ export function LogoMark({ className = 'size-9' }: LogoMarkProps) {
   )
 }
 
+import { useI18n } from '../i18n'
+
 interface LogoProps {
   onClick: () => void
 }
 
 /** Mark + wordmark. Always leads to the landing page. */
 export function Logo({ onClick }: LogoProps) {
+  const { t } = useI18n()
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label="Unsaid — на главную"
+      aria-label={t.common.logoLabel}
       className="group -m-1 flex items-center gap-2.5 rounded-xl p-1 text-clay-deep transition-colors hover:text-clay focus-visible:ring-4 focus-visible:ring-clay/25 focus-visible:outline-none"
     >
       <LogoMark className="size-9 transition-transform group-hover:-rotate-6" />
-      <span className="font-serif text-[1.75rem] leading-none tracking-wide">Unsaid</span>
+      {/* On very narrow phones the mark alone carries the brand, so the header fits. */}
+      <span className="hidden font-serif text-[1.75rem] leading-none tracking-wide min-[460px]:inline">Unsaid</span>
     </button>
   )
 }

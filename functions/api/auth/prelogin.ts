@@ -12,6 +12,6 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     .first<{ kdf_salt: string }>()
   if (user) return json({ kdfSalt: user.kdf_salt })
 
-  if (!env.SALT_SECRET) throw new HttpError(500, 'Сервер не настроен: нет SALT_SECRET')
+  if (!env.SALT_SECRET) throw new HttpError(500, 'serverMisconfigured')
   return json({ kdfSalt: await decoySalt(env.SALT_SECRET, email) })
 }

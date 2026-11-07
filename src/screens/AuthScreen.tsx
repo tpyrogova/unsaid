@@ -1,5 +1,6 @@
 import { AuthForm, type AuthMode } from '../components/AuthForm'
 import { Button } from '../components/Button'
+import { useI18n } from '../i18n'
 import type { UnlockedSession } from '../lib/auth'
 
 export type { AuthMode }
@@ -12,18 +13,19 @@ interface AuthScreenProps {
 }
 
 export function AuthScreen({ initialMode, onAuthenticated, onTryDemo, onBack }: AuthScreenProps) {
+  const { t } = useI18n()
   return (
     <div className="space-y-8">
       <Button variant="ghost" onClick={onBack}>
-        ← На главную
+        {t.common.backHome}
       </Button>
 
       <header className="space-y-3">
         <h1 className="font-serif text-3xl leading-tight sm:text-4xl">
-          Ваш дневник
+          {t.auth.screenTitle}
         </h1>
         <p className="leading-relaxed text-ink-soft">
-          Записи шифруются прямо в браузере. Сервер хранит только шифротекст и не может их прочитать.
+          {t.auth.screenLead}
         </p>
       </header>
 
@@ -31,7 +33,7 @@ export function AuthScreen({ initialMode, onAuthenticated, onTryDemo, onBack }: 
 
       <div className="border-t border-line pt-6">
         <Button variant="ghost" onClick={onTryDemo}>
-          Попробовать без аккаунта →
+          {t.auth.tryDemo}
         </Button>
       </div>
     </div>

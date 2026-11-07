@@ -4,7 +4,7 @@ import { Button } from '../components/Button'
 import { Notice } from '../components/Notice'
 import { TextField } from '../components/TextField'
 import { clearJournal, deleteAccount } from '../lib/auth'
-import { pluralRu } from '../lib/format'
+import { useI18n } from '../i18n'
 
 interface SettingsScreenProps {
   account: Account
@@ -15,16 +15,17 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen({ account, onBack, onLogOut, onJournalCleared, onAccountDeleted }: SettingsScreenProps) {
+  const { t } = useI18n()
   const [notice, setNotice] = useState<string | null>(null)
 
   return (
     <div className="space-y-10">
       <Button variant="ghost" onClick={onBack}>
-        ← К дневнику
+        {t.common.backToJournal}
       </Button>
 
       <header className="space-y-2">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Настройки аккаунта</h1>
+        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{t.settings.title}</h1>
       </header>
 
       {notice && <Notice>{notice}</Notice>}
@@ -35,40 +36,39 @@ export function SettingsScreen({ account, onBack, onLogOut, onJournalCleared, on
           <p className="mt-1 font-medium">{account.email}</p>
         </div>
         <Button variant="secondary" onClick={onLogOut}>
-          Выйти
+          {t.settings.logout}
         </Button>
       </section>
 
       <section className="space-y-2 rounded-3xl bg-sage-soft/60 p-6 text-sm leading-relaxed">
-        <p className="font-medium">Что хранится на сервере</p>
+        <p className="font-medium">{t.settings.storedTitle}</p>
         <p className="text-ink-soft">
-          Email, зашифрованные записи (прочитать их сервер не может), зашифрованный ключ, активные сессии и служебные
-          счётчики без текста: лимиты запросов и отметки срабатываний протокола безопасности.
+          {t.settings.storedText}
         </p>
       </section>
 
       <DangerAction
-        title="Очистить дневник"
-        description="Удалит все записи вместе с темами. Аккаунт и пароль останутся: можно заново загрузить дневник с iPhone. Записи, которые вы раньше удаляли как мусор, при новом импорте тоже вернутся."
-        confirmLabel="Очистить дневник навсегда"
+        title={t.settings.clearTitle}
+        description={t.settings.clearText}
+        confirmLabel={t.settings.clearConfirm}
         onConfirm={async (password) => {
           const deleted = await clearJournal(account, password)
-          setNotice(`Дневник очищен: удалено ${deleted} ${pluralRu(deleted, ['запись', 'записи', 'записей'])}.`)
+          setNotice(t.settings.cleared(deleted))
           onJournalCleared()
         }}
       />
 
       <DangerAction
-        title="Удалить аккаунт и все данные"
-        description="Удалит email, все записи, ключи шифрования, сессии и служебные счётчики. Восстановить ничего не получится. Тексты, которые отправлялись модели на разбор, не хранились и раньше. Технические журналы запросов (например, IP-адреса) Cloudflare хранит по своей политике."
-        confirmLabel="Удалить аккаунт навсегда"
+        title={t.settings.deleteTitle}
+        description={t.settings.deleteText}
+        confirmLabel={t.settings.deleteConfirm}
         onConfirm={async (password) => {
           await deleteAccount(account, password)
           onAccountDeleted()
         }}
       >
         <p className="text-sm text-ink-soft">
-          Перед удалением можно сохранить записи: они остаются в «Дневнике» на iPhone.
+          {t.settings.deleteNote}
         </p>
       </DangerAction>
     </div>
@@ -88,6 +88,7 @@ interface DangerActionProps {
  * password (checked by the server via the re-derived authKey).
  */
 function DangerAction({ title, description, confirmLabel, onConfirm, children }: DangerActionProps) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
@@ -107,7 +108,7 @@ function DangerAction({ title, description, confirmLabel, onConfirm, children }:
       await onConfirm(password)
       close()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не получилось. Попробуйте ещё раз.')
+      setError(err instanceof Error ? err.message : t.settings.error)
     } finally {
       setBusy(false)
     }
@@ -124,7 +125,7 @@ function DangerAction({ title, description, confirmLabel, onConfirm, children }:
       {open ? (
         <form onSubmit={submit} className="space-y-4">
           <TextField
-            label="Пароль для подтверждения"
+            label={t.settings.confirmPassword}
             type="password"
             autoComplete="current-password"
             autoFocus
@@ -139,10 +140,10 @@ function DangerAction({ title, description, confirmLabel, onConfirm, children }:
               disabled={busy || password.length === 0}
               className="rounded-full bg-clay-deep px-6 py-3 font-medium text-card transition-colors hover:bg-ink focus-visible:ring-4 focus-visible:ring-clay/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {busy ? 'Проверяю пароль…' : confirmLabel}
+              {busy ? t.settings.checking : confirmLabel}
             </button>
             <Button variant="ghost" onClick={close} disabled={busy}>
-              Отмена
+              {t.common.cancel}
             </Button>
           </div>
         </form>

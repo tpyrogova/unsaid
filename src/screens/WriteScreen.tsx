@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Button } from '../components/Button'
 import { Notice } from '../components/Notice'
+import { useI18n } from '../i18n'
 import { todayIso } from '../lib/format'
 
 /** How the entry should be saved; omitted in demo mode (nothing is saved). */
@@ -20,6 +21,8 @@ interface WriteScreenProps {
 }
 
 export function WriteScreen({ text, onTextChange, onAnalyzeOnly, onSave, onBack, backLabel }: WriteScreenProps) {
+  const { t } = useI18n()
+  const w = t.write
   const [date, setDate] = useState(todayIso)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +35,7 @@ export function WriteScreen({ text, onTextChange, onAnalyzeOnly, onSave, onBack,
     try {
       await onSave({ date, text }, then)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось сохранить запись.')
+      setError(err instanceof Error ? err.message : w.saveError)
       setBusy(false)
     }
   }
@@ -51,16 +54,15 @@ export function WriteScreen({ text, onTextChange, onAnalyzeOnly, onSave, onBack,
       </Button>
 
       <header className="space-y-3">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Что сегодня на душе?</h1>
+        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{w.title}</h1>
         <p className="leading-relaxed text-ink-soft">
-          Напишите как есть, без редактуры. Разбор покажет чувства и потребности, привычные ловушки мышления
-          и повторяющиеся сценарии, каждый раз со ссылкой на ваши собственные слова.
+          {w.lead}
         </p>
       </header>
 
       {onSave && (
         <label className="block max-w-xs space-y-1.5">
-          <span className="block text-sm font-medium">Дата записи</span>
+          <span className="block text-sm font-medium">{w.date}</span>
           <input
             type="date"
             value={date}
@@ -73,12 +75,12 @@ export function WriteScreen({ text, onTextChange, onAnalyzeOnly, onSave, onBack,
       )}
 
       <label className="block">
-        <span className="sr-only">Запись в дневнике</span>
+        <span className="sr-only">{w.textLabel}</span>
         <textarea
           value={text}
           onChange={(event) => onTextChange(event.target.value)}
           rows={12}
-          placeholder="Сегодня я…"
+          placeholder={w.placeholder}
           className="block min-h-[50dvh] w-full resize-y rounded-2xl border border-line bg-card p-5 font-serif text-lg leading-relaxed shadow-[0_1px_0_rgba(59,47,42,0.04)] placeholder:text-ink-soft/60 focus:border-clay focus:ring-4 focus:ring-clay/15 focus:outline-none"
         />
       </label>
@@ -87,21 +89,21 @@ export function WriteScreen({ text, onTextChange, onAnalyzeOnly, onSave, onBack,
 
       {onSave ? (
         <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-ink-soft">Запись зашифруется на вашем устройстве и добавится в дневник.</p>
+          <p className="text-sm text-ink-soft">{w.saveNote}</p>
           <div className="flex flex-wrap gap-3">
             <Button variant="secondary" disabled={isEmpty || busy} onClick={() => save('analyze')}>
-              Сохранить и разобрать
+              {w.saveAndReview}
             </Button>
             <Button type="submit" disabled={isEmpty || busy}>
-              {busy ? 'Сохраняю…' : 'Сохранить'}
+              {busy ? w.saving : w.save}
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex flex-col-reverse items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-ink-soft">Текст остаётся только в этой вкладке.</p>
+          <p className="text-sm text-ink-soft">{w.demoNote}</p>
           <Button type="submit" disabled={isEmpty}>
-            Разобрать
+            {w.review}
           </Button>
         </div>
       )}

@@ -12,10 +12,10 @@ import { assertWithinBudget, recordUsage } from '../../server/usage'
  */
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   const user = await requireUser(request, env)
-  const { entries } = await readJson(request, categorizeRequestSchema)
+  const { entries, lang } = await readJson(request, categorizeRequestSchema)
   await assertWithinBudget(env, user.id, 'categorize', entries.length)
 
-  const results = await categorizeEntries(env.AI, entries)
+  const results = await categorizeEntries(env.AI, entries, lang)
   await recordUsage(env, user.id, 'categorize', entries.length)
 
   return json({ results, meta: { model: QWEN_MODEL } })

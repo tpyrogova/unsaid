@@ -96,15 +96,15 @@ export async function runStructured<T>(ai: AiBinding, request: StructuredRequest
       // Log the error type only: messages from the platform could echo input.
       console.error('Workers AI call failed:', error instanceof Error ? error.name : typeof error)
       if (isQuotaExhausted(error)) {
-        throw new HttpError(503, 'Бесплатный дневной лимит модели исчерпан. Он обновится в 00:00 UTC (01:00 по Берлину).')
+        throw new HttpError(503, 'modelQuota')
       }
       // Upstream errors (e.g. InferenceUpstreamError) are often transient.
       if (attempt < MAX_ATTEMPTS) continue
-      throw new HttpError(502, 'Модель сейчас недоступна. Попробуйте чуть позже.')
+      throw new HttpError(502, 'modelUnavailable')
     }
 
     const parsed = request.schema.safeParse(extractModelOutput(raw))
     if (parsed.success && (request.accept?.(parsed.data) ?? true)) return parsed.data
   }
-  throw new HttpError(502, 'Модель вернула ответ в неожиданном формате. Попробуйте ещё раз.')
+  throw new HttpError(502, 'modelBadOutput')
 }

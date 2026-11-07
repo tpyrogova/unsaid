@@ -23,9 +23,20 @@ export interface ImportedEntry {
   mediaCount: number
 }
 
+/** Why a file was skipped; the UI turns the code into text. */
+export type SkipReason = 'noBody' | 'noDate' | 'mediaOnly' | 'empty'
+
 export interface ImportSkip {
   file: string
-  reason: string
+  reason: SkipReason
+}
+
+/** The archive is not an iPhone Journal export. */
+export class NotJournalExportError extends Error {
+  constructor() {
+    super('No Entries/*.html files in the archive')
+    this.name = 'NotJournalExportError'
+  }
 }
 
 export interface ImportResult {
@@ -105,15 +116,15 @@ export function parseAppleJournalEntry(
   const doc = parser.parseFromString(html, 'text/html')
 
   const bodyText = doc.querySelector('.bodyText')
-  if (!bodyText) return { file: fileName, reason: 'не найден текст записи' }
+  if (!bodyText) return { file: fileName, reason: 'noBody' }
 
   const header = cleanLine(doc.querySelector('.pageHeader')?.textContent ?? '')
   const date = parseHeaderDate(header) ?? dateFromFileName(fileName)
-  if (!date) return { file: fileName, reason: 'не удалось определить дату' }
+  if (!date) return { file: fileName, reason: 'noDate' }
 
   const text = extractBody(bodyText)
   const mediaCount = doc.querySelectorAll('.assetGrid .gridItem').length
-  if (!text) return { file: fileName, reason: mediaCount > 0 ? 'только медиа, без текста' : 'пустая запись' }
+  if (!text) return { file: fileName, reason: mediaCount > 0 ? 'mediaOnly' : 'empty' }
 
   return {
     sourceKey: `apple-journal:${fileName}`,
@@ -157,7 +168,7 @@ export async function readAppleJournalZip(data: Uint8Array): Promise<ImportResul
 
   const paths = Object.keys(files)
   if (paths.length === 0) {
-    throw new Error('В архиве нет папки Entries с записями. Это точно экспорт из «Дневника»?')
+    throw new NotJournalExportError()
   }
 
   const decoder = new TextDecoder()

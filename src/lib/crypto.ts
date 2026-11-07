@@ -15,6 +15,7 @@
  */
 import type { EncryptedEntry, KeyBundle } from '../../shared/contract'
 import { base64ToBytes, bytesToBase64, bytesToBase64Url, utf8 } from '../../shared/encoding'
+import { dict } from '../i18n'
 
 /** OWASP 2023 recommendation for PBKDF2-HMAC-SHA256. */
 export const PBKDF2_ITERATIONS = 600_000
@@ -37,7 +38,7 @@ export interface Credentials {
 
 export class WrongPasswordError extends Error {
   constructor() {
-    super('Неверный пароль')
+    super(dict().api.wrongPassword)
   }
 }
 

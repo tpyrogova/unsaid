@@ -25,6 +25,8 @@ export const MAX_ENTRIES_PER_CATEGORIZE = 30
 export const MAX_CATEGORIZE_TEXT_LENGTH = 1500
 
 export const categorizeRequestSchema = z.object({
+  /** UI language: junk reasons are written in it. */
+  lang: z.enum(['ru', 'en']).default('ru'),
   entries: z
     .array(z.object({ id: entryIdSchema, text: z.string().trim().min(1).max(MAX_CATEGORIZE_TEXT_LENGTH) }))
     .min(1)

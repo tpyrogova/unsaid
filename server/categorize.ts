@@ -34,7 +34,7 @@ const SYSTEM_PROMPT = `Ты помогаешь человеку навести �
 1. category — одна основная тема из списка:
 ${CATEGORY_LIST}
    Если тем несколько, выбери ту, о которой запись в первую очередь. Запись о собственных переживаниях без явного другого человека или сферы — self.
-2. junk_reason — заполняй, только если запись почти наверняка не имеет ценности для дневника: тестовая или случайная запись, бессмысленный набор символов, чистый список покупок или дел без мыслей и чувств, только ссылка. Коротко объясни причину по-русски (до 8 слов). Во всех остальных случаях — null.
+2. junk_reason — заполняй, только если запись почти наверняка не имеет ценности для дневника: тестовая или случайная запись, бессмысленный набор символов, чистый список покупок или дел без мыслей и чувств, только ссылка. Коротко объясни причину ({reason_language}, до 8 слов). Во всех остальных случаях — null.
    Короткая эмоциональная запись — НЕ мусор. Сомневаешься — null.
 
 Не пропускай записи и не добавляй лишние. Отвечай строго JSON по схеме.`
@@ -58,11 +58,17 @@ export function mapModelItems(items: ModelOutput['items'], entries: EntryInput[]
   return results
 }
 
-export async function categorizeEntries(ai: AiBinding, entries: EntryInput[]): Promise<CategorizedEntry[]> {
+const REASON_LANGUAGE = { ru: 'по-русски', en: 'in English' } as const
+
+export async function categorizeEntries(
+  ai: AiBinding,
+  entries: EntryInput[],
+  lang: 'ru' | 'en' = 'ru',
+): Promise<CategorizedEntry[]> {
   const user = entries.map((entry, i) => `### ${i + 1}\n${entry.text}`).join('\n\n')
 
   const output = await runStructured(ai, {
-    system: SYSTEM_PROMPT,
+    system: SYSTEM_PROMPT.replace('{reason_language}', REASON_LANGUAGE[lang]),
     user,
     schema: modelOutputSchema,
     // ~25 output tokens per item, with generous headroom.

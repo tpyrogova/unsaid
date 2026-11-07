@@ -1,12 +1,15 @@
 import type { z } from 'zod'
+import type { MessageKey } from './messages'
 
-/** An error that is safe to show to the client as-is. */
+/** An error that is safe to show to the client; the middleware localizes `key`. */
 export class HttpError extends Error {
   readonly status: number
+  readonly key: MessageKey
 
-  constructor(status: number, message: string) {
-    super(message)
+  constructor(status: number, key: MessageKey) {
+    super(key)
     this.status = status
+    this.key = key
   }
 }
 
@@ -27,23 +30,23 @@ export function json(data: unknown, init: ResponseInit = {}): Response {
 export async function readJson<T>(request: Request, schema: z.ZodType<T>): Promise<T> {
   const contentType = request.headers.get('Content-Type') ?? ''
   if (!contentType.startsWith('application/json')) {
-    throw new HttpError(415, 'Ожидается JSON')
+    throw new HttpError(415, 'expectedJson')
   }
   const length = Number(request.headers.get('Content-Length') ?? 0)
   if (length > MAX_BODY_BYTES) {
-    throw new HttpError(413, 'Слишком большой запрос')
+    throw new HttpError(413, 'bodyTooLarge')
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    throw new HttpError(400, 'Некорректный JSON')
+    throw new HttpError(400, 'invalidJson')
   }
 
   const parsed = schema.safeParse(body)
   if (!parsed.success) {
-    throw new HttpError(400, 'Некорректные данные запроса')
+    throw new HttpError(400, 'invalidRequest')
   }
   return parsed.data
 }

@@ -53,6 +53,14 @@ describe('POST /api/categorize', () => {
     expect(prompt).not.toContain('entry-id-0000002')
   })
 
+  it('writes junk reasons in the UI language', async () => {
+    const { env, cookie, ai } = await signedIn(fakeAi({ response: { items } }, { response: { items } }))
+    await call(env, categorize, { body: { lang: 'en', entries }, cookie })
+    await call(env, categorize, { body: { entries }, cookie })
+    expect(JSON.stringify(ai.calls[0]?.messages)).toContain('in English')
+    expect(JSON.stringify(ai.calls[1]?.messages)).toContain('по-русски')
+  })
+
   it('rejects categories outside the fixed list', async () => {
     const invented = [{ n: 1, category: 'hobbies', junk_reason: null }]
     const { env, cookie } = await signedIn(fakeAi({ response: { items: invented } }, { response: { items: invented } }))

@@ -4,6 +4,7 @@ import { CrisisView } from '../components/CrisisView'
 import { LoadingState } from '../components/LoadingState'
 import { Notice } from '../components/Notice'
 import { ReviewView } from '../components/ReviewView'
+import { dict, useI18n } from '../i18n'
 import { analyzeEntry } from '../lib/api'
 import type { AnalyzeResponse } from '../types/analysis'
 
@@ -19,6 +20,7 @@ interface AnalysisScreenProps {
 
 /** Careful review of a single entry. */
 export function AnalysisScreen({ text, demo, onBack, backLabel }: AnalysisScreenProps) {
+  const { t } = useI18n()
   const [state, setState] = useState<State>({ status: 'loading' })
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export function AnalysisScreen({ text, demo, onBack, backLabel }: AnalysisScreen
       .then((result) => setState({ status: 'ready', result }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return
-        setState({ status: 'error', message: error instanceof Error ? error.message : 'Не получилось сделать разбор.' })
+        setState({ status: 'error', message: error instanceof Error ? error.message : dict().analysis.error })
       })
     return () => controller.abort()
   }, [text, demo])
@@ -40,8 +42,8 @@ export function AnalysisScreen({ text, demo, onBack, backLabel }: AnalysisScreen
       </Button>
       <ResultView
         state={state}
-        title="Разбор записи"
-        loadingHint={demo ? undefined : 'Сначала бережная проверка, потом разбор. Обычно до минуты.'}
+        title={t.analysis.entryTitle}
+        loadingHint={demo ? undefined : t.analysis.loadingHint}
       />
     </div>
   )

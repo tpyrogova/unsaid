@@ -12,7 +12,7 @@ export async function assertPassword(env: Env, user: UserRow, authKey: string): 
   await assertLoginAllowed(env, user.email)
   if (!timingSafeEqual(await hashAuthKey(authKey, user.auth_salt), user.auth_hash)) {
     await recordFailedLogin(env, user.email)
-    throw new HttpError(403, 'Неверный пароль')
+    throw new HttpError(403, 'wrongPassword')
   }
   await clearFailedLogins(env, user.email)
 }

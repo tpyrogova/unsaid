@@ -28,6 +28,8 @@ export interface CallOptions {
   cookie?: string | null
   params?: Record<string, string>
   contentType?: string
+  /** Sent as Accept-Language. */
+  lang?: string
 }
 
 /** Runs a handler through the real middleware, like Pages does. */
@@ -35,6 +37,7 @@ export async function call(env: Env, handler: PagesFunction<Env>, options: CallO
   const headers = new Headers()
   if (options.body !== undefined) headers.set('Content-Type', options.contentType ?? 'application/json')
   if (options.cookie) headers.set('Cookie', options.cookie)
+  if (options.lang) headers.set('Accept-Language', options.lang)
   const request = new Request('https://unsaid.test/api', {
     method: options.method ?? (options.body === undefined ? 'GET' : 'POST'),
     headers,

@@ -2,6 +2,7 @@
 import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import {
+  NotJournalExportError,
   parseAppleJournalEntry,
   parseHeaderDate,
   readAppleJournalZip,
@@ -75,7 +76,7 @@ describe('parseAppleJournalEntry', () => {
     const mediaOnly = FIXTURE.replace(/(<div class='bodyText'>)[\s\S]*(<p class="p1"><span class="s1"><\/div>)/, '$1$2')
     expect(parseAppleJournalEntry(FIXTURE_PATH, mediaOnly)).toEqual({
       file: '2026-08-13_Ранок_у_парку',
-      reason: 'только медиа, без текста',
+      reason: 'mediaOnly',
     })
   })
 })
@@ -98,6 +99,8 @@ describe('readAppleJournalZip', () => {
   })
 
   it('explains when the archive is not a Journal export', async () => {
-    await expect(readAppleJournalZip(zipSync({ 'notes.txt': strToU8('hi') }))).rejects.toThrow(/Entries/)
+    await expect(readAppleJournalZip(zipSync({ 'notes.txt': strToU8('hi') }))).rejects.toBeInstanceOf(
+      NotJournalExportError,
+    )
   })
 })

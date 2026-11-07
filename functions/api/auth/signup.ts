@@ -38,7 +38,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       .run()
   } catch (error) {
     if (error instanceof Error && error.message.includes('UNIQUE')) {
-      throw new HttpError(409, 'Аккаунт с таким email уже существует')
+      throw new HttpError(409, 'emailTaken')
     }
     throw error
   }

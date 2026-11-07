@@ -94,6 +94,14 @@ describe('auth', () => {
     expect((await call(me, { cookie })).status).toBe(401)
   })
 
+  it('answers errors in the language from Accept-Language (Russian by default)', async () => {
+    await signUpAlice()
+    const wrong = { email: ALICE.email, authKey: b64('x') }
+    expect((await call(login, { body: wrong, lang: 'en' })).body.error).toBe('Wrong email or password')
+    expect((await call(login, { body: wrong, lang: 'ru-RU,ru;q=0.9' })).body.error).toBe('Неверный email или пароль')
+    expect((await call(login, { body: wrong })).body.error).toBe('Неверный email или пароль')
+  })
+
   it('rejects non-JSON bodies (blocks cross-site form posts)', async () => {
     const response = await call(login, { body: { email: ALICE.email, authKey: ALICE.authKey }, contentType: 'text/plain' })
     expect(response.status).toBe(415)

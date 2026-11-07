@@ -3,6 +3,7 @@ import type { Account } from '../../shared/contract'
 import { Button } from '../components/Button'
 import { Notice } from '../components/Notice'
 import { TextField } from '../components/TextField'
+import { useI18n } from '../i18n'
 import { unlockWithPassword, type VaultKeys } from '../lib/crypto'
 
 interface UnlockScreenProps {
@@ -17,6 +18,8 @@ interface UnlockScreenProps {
  * entirely in the browser.
  */
 export function UnlockScreen({ account, onUnlocked, onLogOut }: UnlockScreenProps) {
+  const { t } = useI18n()
+  const u = t.unlock
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,7 +31,7 @@ export function UnlockScreen({ account, onUnlocked, onLogOut }: UnlockScreenProp
     try {
       onUnlocked(await unlockWithPassword(password, account.keys))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не получилось открыть дневник.')
+      setError(err instanceof Error ? err.message : u.error)
       setBusy(false)
     }
   }
@@ -36,15 +39,16 @@ export function UnlockScreen({ account, onUnlocked, onLogOut }: UnlockScreenProp
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
       <header className="space-y-3">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Дневник закрыт</h1>
+        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{u.title}</h1>
         <p className="leading-relaxed text-ink-soft">
-          Ключ шифрования не сохраняется между перезагрузками. Введите пароль для{' '}
-          <span className="text-ink">{account.email}</span>, чтобы открыть записи.
+          {u.leadBefore}
+          <span className="text-ink">{account.email}</span>
+          {u.leadAfter}
         </p>
       </header>
 
       <TextField
-        label="Пароль"
+        label={t.auth.password}
         type="password"
         autoComplete="current-password"
         autoFocus
@@ -57,10 +61,10 @@ export function UnlockScreen({ account, onUnlocked, onLogOut }: UnlockScreenProp
 
       <div className="flex flex-wrap items-center gap-4">
         <Button type="submit" disabled={busy || password.length === 0}>
-          {busy ? 'Открываю…' : 'Открыть дневник'}
+          {busy ? u.opening : u.open}
         </Button>
         <Button variant="ghost" onClick={onLogOut}>
-          Выйти из аккаунта
+          {u.logout}
         </Button>
       </div>
     </form>

@@ -1,0 +1,48 @@
+{
+  "heard": "You feel warm with Anna, and at the same time every pause in your conversations quickly turns into worry that you are a burden to her. You already know how this usually ends, and you want it to go differently.",
+  "feelings": [
+    {
+      "quote": "glad and tense at the same time",
+      "feeling": "joy and anxiety together",
+      "need": "safety in closeness"
+    },
+    {
+      "quote": "I spent the whole evening sure she was upset with me",
+      "feeling": "fear of rejection",
+      "need": "certainty"
+    },
+    {
+      "quote": "we'll fight and I'll end up completely alone",
+      "feeling": "fear of loneliness",
+      "need": "mutuality where you can talk about yourself"
+    },
+    {
+      "quote": "I want to stop guessing and simply know where I stand",
+      "feeling": "tiredness from uncertainty",
+      "need": "clarity"
+    }
+  ],
+  "distortions": [
+    {
+      "type": "Mind reading",
+      "quote": "I spent the whole evening sure she was upset with me",
+      "reframe": "Five hours without a reply could mean anything. I don't know what she felt, and I can ask instead of guessing."
+    },
+    {
+      "type": "Catastrophizing",
+      "quote": "we'll fight and I'll end up completely alone",
+      "reframe": "Talking about what hurts may be awkward, but it doesn't have to end the relationship."
+    }
+  ],
+  "pattern": {
+    "framework": "attachment",
+    "rationale": "The main tension in the entry is between wanting closeness and fearing to lose it, and it repeats with different people.",
+    "hypothesis": "It looks like when contact feels uncertain, anxiety grows, and staying silent seems safer than saying what hurts. You remember yourself that with Lena, silence ended with you no longer replying. Does this resonate?"
+  },
+  "question": "What would you like Anna to know about you, if it felt safe to say?",
+  "steps": [
+    "When you start guessing again, you could write facts and guesses separately: “she replied five hours later” and “she is upset with me”.",
+    "If you feel like it, pick one small thing that hurts and just notice how you might put it into words.",
+    "A topic for a therapist, if you want one: why staying silent feels safer than talking about your feelings."
+  ]
+}

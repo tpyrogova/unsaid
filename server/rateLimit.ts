@@ -13,7 +13,7 @@ export async function assertLoginAllowed(env: Env, email: string): Promise<void>
     .first<{ count: number }>()
 
   if ((row?.count ?? 0) >= MAX_FAILED_ATTEMPTS) {
-    throw new HttpError(429, 'Слишком много попыток. Попробуйте через 15 минут.')
+    throw new HttpError(429, 'tooManyAttempts')
   }
 }
 

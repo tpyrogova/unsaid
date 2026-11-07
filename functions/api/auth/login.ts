@@ -16,7 +16,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   if (!user || !valid) {
     await recordFailedLogin(env, email)
     // Same message for "no such user" and "wrong password".
-    throw new HttpError(401, 'Неверный email или пароль')
+    throw new HttpError(401, 'wrongCredentials')
   }
 
   await clearFailedLogins(env, email)

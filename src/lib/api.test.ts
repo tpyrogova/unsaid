@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { entryReviewSchema, MAX_PERIOD_TOTAL_CHARS } from '../../shared/analysis'
+import mockReviewEn from '../mocks/analysis.en.json'
 import mockReview from '../mocks/analysis.json'
-import { SAMPLE_ENTRY } from '../mocks/sampleEntry'
+import { SAMPLE_ENTRY, SAMPLE_ENTRY_EN } from '../mocks/sampleEntry'
 import type { JournalEntry } from '../types/journal'
 import { entriesInPeriod, prepareForPeriod } from './api'
 
@@ -15,9 +16,12 @@ const entry = (date: string, text: string): JournalEntry => ({
 })
 
 describe('demo mock', () => {
-  it('matches the review schema and quotes the sample entry verbatim', () => {
-    const review = entryReviewSchema.parse(mockReview)
-    for (const { quote } of [...review.feelings, ...review.distortions]) expect(SAMPLE_ENTRY).toContain(quote)
+  it.each([
+    ['ru', mockReview, SAMPLE_ENTRY],
+    ['en', mockReviewEn, SAMPLE_ENTRY_EN],
+  ])('%s: matches the review schema and quotes the sample entry verbatim', (_lang, mock, entry) => {
+    const review = entryReviewSchema.parse(mock)
+    for (const { quote } of [...review.feelings, ...review.distortions]) expect(entry).toContain(quote)
   })
 })
 

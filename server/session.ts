@@ -83,7 +83,7 @@ export async function getSessionUser(request: Request, env: Env): Promise<UserRo
 
 export async function requireUser(request: Request, env: Env): Promise<UserRow> {
   const user = await getSessionUser(request, env)
-  if (!user) throw new HttpError(401, 'Нужно войти в аккаунт')
+  if (!user) throw new HttpError(401, 'authRequired')
   return user
 }
 

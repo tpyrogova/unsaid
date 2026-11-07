@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { Account } from '../shared/contract'
 import { AccountMenu } from './components/AccountMenu'
+import { LanguageSwitch } from './components/LanguageSwitch'
 import { Logo } from './components/Logo'
 import { Notice } from './components/Notice'
+import { dict, useI18n } from './i18n'
+import type { Dictionary } from './i18n/ru'
 import { fetchCurrentAccount, logOut, type UnlockedSession } from './lib/auth'
 import { saveManualEntry } from './lib/journal'
 import type { VaultKeys } from './lib/crypto'
-import { SAMPLE_ENTRY } from './mocks/sampleEntry'
+import { SAMPLE_ENTRIES } from './mocks/sampleEntry'
 import { AnalysisScreen } from './screens/AnalysisScreen'
 import { AnalyzePeriodScreen } from './screens/AnalyzePeriodScreen'
 import { AuthScreen, type AuthMode } from './screens/AuthScreen'
@@ -42,23 +45,25 @@ type View =
   | { name: 'write'; demo: boolean }
   | { name: 'categorize'; entries: JournalEntry[] }
   | { name: 'analyze-period'; entries: JournalEntry[] }
-  | { name: 'analysis'; text: string; demo: boolean; back: View; backLabel: string }
+  /** `backLabel` is a dictionary key, so it follows a language switch. */
+  | { name: 'analysis'; text: string; demo: boolean; back: View; backLabel: keyof Dictionary['nav'] }
 
 const HOME: View = { name: 'home' }
 
 export default function App() {
+  const { t, lang } = useI18n()
   const [session, setSession] = useState<Session>({ status: 'checking' })
   const [view, setView] = useState<View>(HOME)
   const [draft, setDraft] = useState('')
   const [bootError, setBootError] = useState<string | null>(null)
   /** One-off confirmation shown on the landing page (e.g. after account deletion). */
-  const [flash, setFlash] = useState<string | null>(null)
+  const [flash, setFlash] = useState<'accountDeleted' | null>(null)
 
   useEffect(() => {
     fetchCurrentAccount()
       .then((account) => setSession(account ? { status: 'locked', account } : { status: 'anonymous' }))
       .catch((error: unknown) => {
-        setBootError(error instanceof Error ? error.message : 'Сервер недоступен')
+        setBootError(error instanceof Error ? error.message : dict().common.serverUnavailable)
         setSession({ status: 'anonymous' })
       })
   }, [])
@@ -103,19 +108,19 @@ export default function App() {
       <>
         {bootError && (
           <div className="mx-auto max-w-6xl px-5 pt-4 sm:px-8">
-            <Notice tone="error">Не удалось связаться с сервером: {bootError}. Демо-режим работает и без него.</Notice>
+            <Notice tone="error">{t.common.serverUnreachable(bootError)}</Notice>
           </div>
         )}
         {flash && (
           <div className="mx-auto max-w-6xl px-5 pt-4 sm:px-8">
-            <Notice>{flash}</Notice>
+            <Notice>{t.common[flash]}</Notice>
           </div>
         )}
         <LandingPage
           onSignUp={() => setView({ name: 'auth', mode: 'signup' })}
           onLogIn={() => setView({ name: 'auth', mode: 'login' })}
           onImport={() => setView({ name: 'import' })}
-          onTryDemo={() => startWriting(SAMPLE_ENTRY, true)}
+          onTryDemo={() => startWriting(SAMPLE_ENTRIES[lang], true)}
           onHome={goToLanding}
           accountMenu={accountMenu}
         />
@@ -127,7 +132,10 @@ export default function App() {
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col px-5 py-10 sm:px-8 sm:py-16">
       <header className="mb-12 flex items-center justify-between gap-4">
         <Logo onClick={goToLanding} />
-        {accountMenu}
+        <div className="flex items-center gap-3">
+          <LanguageSwitch />
+          {accountMenu}
+        </div>
       </header>
 
       <main className="flex-1 space-y-6">
@@ -135,8 +143,7 @@ export default function App() {
       </main>
 
       <footer className="mt-16 border-t border-line pt-6 text-xs leading-relaxed text-ink-soft">
-        Unsaid не заменяет психолога. Если вам тяжело, пожалуйста, обратитесь к специалисту или
-        к близкому человеку.
+        {t.common.disclaimer}
       </footer>
     </div>
   )
@@ -149,9 +156,9 @@ export default function App() {
           text={draft}
           onTextChange={setDraft}
           onBack={() => setView(view.demo ? { name: 'landing' } : HOME)}
-          backLabel={view.demo ? 'На главную' : 'К дневнику'}
+          backLabel={view.demo ? t.nav.toHome : t.nav.toJournal}
           onAnalyzeOnly={() =>
-            setView({ name: 'analysis', text: draft, demo: view.demo, back: view, backLabel: 'Вернуться к записи' })
+            setView({ name: 'analysis', text: draft, demo: view.demo, back: view, backLabel: 'backToEntry' })
           }
           onSave={
             !view.demo && session.status === 'unlocked'
@@ -160,7 +167,7 @@ export default function App() {
                   setDraft('')
                   setView(
                     then === 'analyze'
-                      ? { name: 'analysis', text: saved.text, demo: false, back: { name: 'entry', entry: saved }, backLabel: 'К записи' }
+                      ? { name: 'analysis', text: saved.text, demo: false, back: { name: 'entry', entry: saved }, backLabel: 'toEntry' }
                       : { name: 'entry', entry: saved },
                   )
                 }
@@ -178,7 +185,7 @@ export default function App() {
           lockedEmail={session.status === 'locked' ? session.account.email : undefined}
           onAuthenticated={({ account, vault }) => setSession({ status: 'unlocked', account, vault })}
           onBack={() => setView(HOME)}
-          backLabel={session.status === 'unlocked' ? 'К дневнику' : 'На главную'}
+          backLabel={session.status === 'unlocked' ? t.nav.toJournal : t.nav.toHome}
           onImported={() => setView(HOME)}
         />
       )
@@ -190,7 +197,7 @@ export default function App() {
           text={view.text}
           // A signed-in user analysing their own text gets the model; the sample stays a mock.
           demo={view.demo || session.status !== 'unlocked'}
-          backLabel={view.backLabel}
+          backLabel={t.nav[view.backLabel]}
           onBack={() => setView(view.back)}
         />
       )
@@ -206,7 +213,7 @@ export default function App() {
           onJournalCleared={() => undefined}
           onAccountDeleted={() => {
             setSession({ status: 'anonymous' })
-            setFlash('Аккаунт и все данные удалены.')
+            setFlash('accountDeleted')
             setView(HOME)
           }}
         />
@@ -223,7 +230,7 @@ export default function App() {
             key={view.name === 'auth' ? view.mode : 'login'}
             initialMode={view.name === 'auth' ? view.mode : 'login'}
             onAuthenticated={handleAuthenticated}
-            onTryDemo={() => startWriting(SAMPLE_ENTRY, true)}
+            onTryDemo={() => startWriting(SAMPLE_ENTRIES[lang], true)}
             onBack={() => setView(HOME)}
           />
         )
@@ -258,7 +265,7 @@ export default function App() {
           <EntryDetailScreen
             entry={view.entry}
             onBack={() => setView(HOME)}
-            onAnalyze={(text) => setView({ name: 'analysis', text, demo: false, back: view, backLabel: 'К записи' })}
+            onAnalyze={(text) => setView({ name: 'analysis', text, demo: false, back: view, backLabel: 'toEntry' })}
           />
         )
       default:

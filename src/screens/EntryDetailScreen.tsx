@@ -1,4 +1,5 @@
 import { Button } from '../components/Button'
+import { useI18n } from '../i18n'
 import { formatEntryDate } from '../lib/format'
 import type { JournalEntry } from '../types/journal'
 
@@ -9,10 +10,11 @@ interface EntryDetailScreenProps {
 }
 
 export function EntryDetailScreen({ entry, onBack, onAnalyze }: EntryDetailScreenProps) {
+  const { t } = useI18n()
   return (
     <article className="space-y-8">
       <Button variant="ghost" onClick={onBack}>
-        ← К дневнику
+        {t.common.backToJournal}
       </Button>
 
       <header className="space-y-2">
@@ -23,10 +25,10 @@ export function EntryDetailScreen({ entry, onBack, onAnalyze }: EntryDetailScree
       <div className="font-serif text-lg leading-relaxed whitespace-pre-line">{entry.text}</div>
 
       {entry.mediaCount > 0 && (
-        <p className="text-sm text-ink-soft">В оригинале есть вложения ({entry.mediaCount}), они не импортировались.</p>
+        <p className="text-sm text-ink-soft">{t.entry.media(entry.mediaCount)}</p>
       )}
 
-      <Button onClick={() => onAnalyze(entry.text)}>Разобрать</Button>
+      <Button onClick={() => onAnalyze(entry.text)}>{t.entry.analyze}</Button>
     </article>
   )
 }

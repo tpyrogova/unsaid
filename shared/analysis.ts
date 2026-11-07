@@ -73,13 +73,14 @@ export const MAX_PERIOD_TOTAL_CHARS = 120_000
 export const MAX_PERIOD_ENTRIES = 1000
 export const MAX_FOCUS_LENGTH = 300
 
+/** Preset periods; their labels live in the UI dictionaries (src/i18n). */
 export const PERIODS = {
-  week: { label: 'Последние 7 дней', days: 7 },
-  month: { label: 'Последние 30 дней', days: 30 },
-  quarter: { label: '3 месяца', days: 91 },
-  half: { label: 'Полгода', days: 182 },
-  year: { label: 'Год', days: 365 },
-  all: { label: 'Всё время', days: null },
+  week: { days: 7 },
+  month: { days: 30 },
+  quarter: { days: 91 },
+  half: { days: 182 },
+  year: { days: 365 },
+  all: { days: null },
 } as const
 export type PeriodId = keyof typeof PERIODS
 export const periodIdSchema = z.enum(Object.keys(PERIODS) as [PeriodId, ...PeriodId[]])
@@ -115,12 +116,14 @@ export type AnalyzeRequest = z.infer<typeof analyzeRequestSchema>
 export const safetyLevelSchema = z.union([z.literal(0), z.literal(1), z.literal(2)])
 export type SafetyLevel = z.infer<typeof safetyLevelSchema>
 
+const localizedSchema = z.object({ ru: z.string(), en: z.string() })
+
 const crisisContactSchema = z.object({
-  name: z.string(),
+  name: localizedSchema,
   phone: z.string().optional(),
   tel: z.string().optional(),
   url: z.string().optional(),
-  note: z.string(),
+  note: localizedSchema,
   source: z.string(),
 })
 
@@ -140,7 +143,7 @@ export const analyzeResponseSchema = z.discriminatedUnion('kind', [
   z.object({
     /** Level 2: no review; a direct, warm message and help contacts instead. */
     kind: z.literal('crisis'),
-    contacts: z.array(z.object({ country: z.string(), contacts: z.array(crisisContactSchema) })),
+    contacts: z.array(z.object({ country: localizedSchema, contacts: z.array(crisisContactSchema) })),
   }),
 ])
 export type AnalyzeResponse = z.infer<typeof analyzeResponseSchema>

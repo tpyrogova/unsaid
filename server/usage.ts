@@ -4,6 +4,7 @@
  */
 import type { Env } from './env'
 import { HttpError } from './http'
+import type { MessageKey } from './messages'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -13,13 +14,13 @@ interface Budget {
   /** Units allowed per rolling 24 hours. */
   limit: number
   /** Shown when the budget is exhausted. */
-  message: string
+  message: MessageKey
 }
 
 export const BUDGETS: Record<UsageKind, Budget> = {
-  analyze: { limit: 20, message: 'Лимит 20 разборов в сутки исчерпан. Возвращайтесь завтра.' },
-  period: { limit: 5, message: 'Лимит 5 анализов за период в сутки исчерпан. Возвращайтесь завтра.' },
-  categorize: { limit: 400, message: 'Лимит категоризации (400 записей в сутки) исчерпан. Продолжите завтра.' },
+  analyze: { limit: 20, message: 'budgetAnalyze' },
+  period: { limit: 5, message: 'budgetPeriod' },
+  categorize: { limit: 400, message: 'budgetCategorize' },
 }
 
 /** Throws 429 if adding `units` would exceed today's budget. */

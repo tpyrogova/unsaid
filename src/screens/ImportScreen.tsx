@@ -4,8 +4,9 @@ import { Button } from '../components/Button'
 import { Notice } from '../components/Notice'
 import type { UnlockedSession } from '../lib/auth'
 import type { VaultKeys } from '../lib/crypto'
-import { formatEntryDate, pluralRu } from '../lib/format'
-import { readAppleJournalZip, type ImportResult } from '../lib/importers/appleJournal'
+import { useI18n } from '../i18n'
+import { formatEntryDate } from '../lib/format'
+import { NotJournalExportError, readAppleJournalZip, type ImportResult } from '../lib/importers/appleJournal'
 import { saveImportedEntries, type UploadProgress } from '../lib/journal'
 
 type ImportState =
@@ -26,9 +27,8 @@ interface ImportScreenProps {
   onImported: () => void
 }
 
-const entriesWord = (n: number) => pluralRu(n, ['запись', 'записи', 'записей'])
-
 export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, backLabel, onImported }: ImportScreenProps) {
+  const { t } = useI18n()
   const [state, setState] = useState<ImportState>({ step: 'pick' })
   const [error, setError] = useState<string | null>(null)
 
@@ -43,7 +43,13 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
       const result = await readAppleJournalZip(new Uint8Array(await file.arrayBuffer()))
       setState({ step: 'preview', result })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось прочитать архив.')
+      setError(
+        err instanceof NotJournalExportError
+          ? t.import.notJournalExport
+          : err instanceof Error
+            ? err.message
+            : t.import.readError,
+      )
       setState({ step: 'pick' })
     }
   }
@@ -58,7 +64,7 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
       )
       setState({ step: 'done', inserted, total })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось сохранить записи.')
+      setError(err instanceof Error ? err.message : t.import.saveError)
       setState({ step: 'preview', result })
     }
   }
@@ -76,14 +82,12 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
       </Button>
 
       <header className="space-y-3">
-        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">Загрузите ваш дневник с iPhone</h1>
+        <h1 className="font-serif text-3xl leading-tight sm:text-4xl">{t.import.title}</h1>
         <p className="leading-relaxed text-ink-soft">
-          Переписывать ничего не нужно: выберите файл, который «Дневник» сохраняет при экспорте, и все
-          записи окажутся здесь. Файл читается прямо в браузере, фото и видео не загружаются.
+          {t.import.lead}
         </p>
         <p className="leading-relaxed text-ink-soft">
-          Уже загружали раньше? Загрузите свежий экспорт: добавятся только новые записи, а уже сохранённые
-          (с темами и вашими записями, сделанными здесь) не изменятся.
+          {t.import.reimport}
         </p>
       </header>
 
@@ -93,7 +97,7 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
         <>
           <label className="flex cursor-pointer flex-col items-center gap-3 rounded-3xl border-2 border-dashed border-clay/40 bg-card px-6 py-14 text-center transition-colors hover:border-clay has-focus-visible:border-clay">
             <span className="font-serif text-xl">
-              {state.step === 'reading' ? 'Читаю архив…' : 'Выбрать файл дневника'}
+              {state.step === 'reading' ? t.import.reading : t.import.choose}
             </span>
             <span className="text-sm text-ink-soft">AppleJournalEntries.zip</span>
             <input
@@ -114,25 +118,24 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
           {vault ? (
             <div className="flex flex-wrap items-center gap-4">
               <Button onClick={() => save(vault, state.result)} disabled={state.result.entries.length === 0}>
-                Зашифровать и сохранить
+                {t.import.encryptSave}
               </Button>
               <Button variant="ghost" onClick={() => setState({ step: 'pick' })}>
-                Выбрать другой файл
+                {t.import.chooseOther}
               </Button>
             </div>
           ) : (
             <section className="space-y-5 rounded-3xl border border-line bg-card p-6 sm:p-8">
               <div className="space-y-2">
-                <h2 className="font-serif text-2xl">Последний шаг: придумайте пароль</h2>
+                <h2 className="font-serif text-2xl">{t.import.lastStep}</h2>
                 <p className="leading-relaxed text-ink-soft">
-                  Из пароля прямо на вашем устройстве создаётся ключ шифрования. Без него сохранить
-                  записи так, чтобы их не мог прочитать никто, кроме вас, не получится.
+                  {t.import.lastStepText}
                 </p>
               </div>
               <AuthForm
                 initialMode={lockedEmail ? 'login' : 'signup'}
                 initialEmail={lockedEmail}
-                signupLabel="Зашифровать и сохранить"
+                signupLabel={t.import.encryptSave}
                 onAuthenticated={(session) => handleAuthenticated(session, state.result)}
               />
             </section>
@@ -151,7 +154,7 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
               />
             </div>
             <p className="text-sm text-ink-soft">
-              Шифрую и сохраняю: {state.progress.done} из {state.progress.total}
+              {t.import.progress(state.progress.done, state.progress.total)}
             </p>
           </div>
         </>
@@ -160,10 +163,9 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
       {state.step === 'done' && (
         <div className="space-y-6">
           <Notice>
-            Готово. Добавлено {state.inserted} {entriesWord(state.inserted)}
-            {state.inserted < state.total && `, ещё ${state.total - state.inserted} уже были в дневнике`}.
+            {t.import.done(state.inserted, state.total)}
           </Notice>
-          <Button onClick={onImported}>Открыть дневник</Button>
+          <Button onClick={onImported}>{t.import.openJournal}</Button>
         </div>
       )}
     </div>
@@ -172,10 +174,11 @@ export function ImportScreen({ vault, lockedEmail, onAuthenticated, onBack, back
 
 /** Official path: Settings → Apps → Journal → Export (support.apple.com/121822). */
 function ExportHowTo() {
-  const steps = ['Откройте «Настройки» на iPhone', '«Приложения» → «Дневник»', 'Нажмите «Экспорт» и дождитесь окончания']
+  const { t } = useI18n()
+  const steps = t.import.howSteps
   return (
     <div className="space-y-3 rounded-3xl bg-sand/60 p-6">
-      <p className="font-medium">Где взять файл</p>
+      <p className="font-medium">{t.import.howTitle}</p>
       <ol className="space-y-2 text-ink-soft">
         {steps.map((step, i) => (
           <li key={step} className="flex gap-3">
@@ -185,13 +188,14 @@ function ExportHowTo() {
         ))}
       </ol>
       <p className="text-sm text-ink-soft">
-        Файл AppleJournalEntries.zip появится в приложении «Файлы». Если пункта «Экспорт» нет, обновите iOS.
+        {t.import.howNote}
       </p>
     </div>
   )
 }
 
 function ImportSummary({ result }: { result: ImportResult }) {
+  const { t } = useI18n()
   const { entries, skipped } = result
   const newest = entries[0]
   const oldest = entries.at(-1)
@@ -200,20 +204,20 @@ function ImportSummary({ result }: { result: ImportResult }) {
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-2 gap-4 rounded-3xl bg-card p-6 sm:grid-cols-3">
-        <Stat label="Найдено" value={`${entries.length} ${entriesWord(entries.length)}`} />
+        <Stat label={t.import.found} value={t.common.entries(entries.length)} />
         {oldest && newest && (
-          <Stat label="Период" value={`${formatEntryDate(oldest.date)} — ${formatEntryDate(newest.date)}`} wide />
+          <Stat label={t.import.period} value={`${formatEntryDate(oldest.date)} — ${formatEntryDate(newest.date)}`} wide />
         )}
-        {withMedia > 0 && <Stat label="С медиа (не импортируются)" value={String(withMedia)} />}
-        {skipped.length > 0 && <Stat label="Пропущено" value={String(skipped.length)} />}
+        {withMedia > 0 && <Stat label={t.import.withMedia} value={String(withMedia)} />}
+        {skipped.length > 0 && <Stat label={t.import.skipped} value={String(skipped.length)} />}
       </dl>
       {skipped.length > 0 && (
         <details className="text-sm text-ink-soft">
-          <summary className="cursor-pointer">Почему пропущены некоторые файлы</summary>
+          <summary className="cursor-pointer">{t.import.whySkipped}</summary>
           <ul className="mt-2 space-y-1">
             {skipped.map((skip) => (
               <li key={skip.file}>
-                {skip.file}: {skip.reason}
+                {skip.file}: {t.import.skipReasons[skip.reason]}
               </li>
             ))}
           </ul>
