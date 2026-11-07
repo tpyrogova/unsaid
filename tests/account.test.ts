@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { onRequestDelete as deleteAccount } from '../functions/api/account'
-import { onRequestGet as me } from '../functions/api/auth/me'
-import { onRequestPost as signup } from '../functions/api/auth/signup'
-import { onRequestGet as listEntries, onRequestPost as uploadEntries, onRequestDelete as deleteEntries } from '../functions/api/entries/index'
-import { onRequestDelete as clearJournal } from '../functions/api/journal'
+import { onRequestDelete as deleteAccount } from '../server/api/account'
+import { onRequestGet as me } from '../server/api/auth/me'
+import { onRequestPost as signup } from '../server/api/auth/signup'
+import { onRequestGet as listEntries, onRequestPost as uploadEntries, onRequestDelete as deleteEntries } from '../server/api/entries/index'
+import { onRequestDelete as clearJournal } from '../server/api/journal'
 import { ALICE, b64, call, createEnv } from './helpers'
 
 const entry = (id: string) => ({ id, ciphertext: b64(id, 64), iv: b64('v', 12) })

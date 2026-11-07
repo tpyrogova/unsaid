@@ -1,11 +1,11 @@
 import { loginRequestSchema } from '../../../shared/contract'
 import { hashAuthKey, timingSafeEqual } from '../../../server/crypto'
-import type { Env } from '../../../server/env'
+import type { ApiHandler } from '../../../server/handler'
 import { HttpError, json, readJson } from '../../../server/http'
 import { assertLoginAllowed, clearFailedLogins, recordFailedLogin } from '../../../server/rateLimit'
 import { createSession, toAccount, type UserRow } from '../../../server/session'
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: ApiHandler = async ({ request, env }) => {
   const { email, authKey } = await readJson(request, loginRequestSchema)
   await assertLoginAllowed(env, email)
 

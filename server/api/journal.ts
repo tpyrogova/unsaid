@@ -1,5 +1,5 @@
 import { reauthRequestSchema } from '../../shared/contract'
-import type { Env } from '../../server/env'
+import type { ApiHandler } from '../../server/handler'
 import { json, readJson } from '../../server/http'
 import { assertPassword } from '../../server/reauth'
 import { requireUser } from '../../server/session'
@@ -9,7 +9,7 @@ import { requireUser } from '../../server/session'
  * deleted ids, so the account starts from scratch and a fresh import works fully.
  * The account itself (and its keys) stays.
  */
-export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestDelete: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { authKey } = await readJson(request, reauthRequestSchema)
   await assertPassword(env, user, authKey)

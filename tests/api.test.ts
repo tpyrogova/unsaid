@@ -1,17 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { onRequestPost as login } from '../functions/api/auth/login'
-import { onRequestPost as logout } from '../functions/api/auth/logout'
-import { onRequestGet as me } from '../functions/api/auth/me'
-import { onRequestPost as prelogin } from '../functions/api/auth/prelogin'
-import { onRequestPost as signup } from '../functions/api/auth/signup'
-import { onRequestDelete as deleteEntry } from '../functions/api/entries/[id]'
+import { onRequestPost as login } from '../server/api/auth/login'
+import { onRequestPost as logout } from '../server/api/auth/logout'
+import { onRequestGet as me } from '../server/api/auth/me'
+import { onRequestPost as prelogin } from '../server/api/auth/prelogin'
+import { onRequestPost as signup } from '../server/api/auth/signup'
+import { onRequestDelete as deleteEntry } from '../server/api/entries/[id]'
 import {
   onRequestDelete as deleteEntries,
   onRequestGet as listEntries,
   onRequestPost as uploadEntries,
   onRequestPut as updateEntries,
-} from '../functions/api/entries/index'
+} from '../server/api/entries/index'
 import type { Env } from '../server/env'
+import type { ApiHandler } from '../server/handler'
 import { ALICE, b64, call as callWith, createEnv, type CallOptions } from './helpers'
 
 let env: Env
@@ -20,7 +21,7 @@ beforeEach(() => {
   env = createEnv()
 })
 
-const call = (handler: PagesFunction<Env>, options?: CallOptions) => callWith(env, handler, options)
+const call = (handler: ApiHandler, options?: CallOptions) => callWith(env, handler, options)
 
 async function signUpAlice() {
   const response = await call(signup, { body: ALICE })
@@ -100,6 +101,8 @@ describe('auth', () => {
     expect((await call(login, { body: wrong, lang: 'en' })).body.error).toBe('Wrong email or password')
     expect((await call(login, { body: wrong, lang: 'ru-RU,ru;q=0.9' })).body.error).toBe('Неверный email или пароль')
     expect((await call(login, { body: wrong })).body.error).toBe('Неверный email или пароль')
+    expect((await call(login, { body: wrong, lang: '*' })).body.error).toBe('Неверный email или пароль')
+    expect((await call(login, { body: wrong, lang: 'en-GB,en;q=0.9' })).body.error).toBe('Wrong email or password')
   })
 
   it('rejects non-JSON bodies (blocks cross-site form posts)', async () => {

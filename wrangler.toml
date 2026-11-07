@@ -1,6 +1,14 @@
 name = "unsaid"
+main = "server/worker.ts"
 compatibility_date = "2026-10-01"
-pages_build_output_dir = "dist"
+
+# The built SPA. Cloudflare serves these files directly (free, no Worker
+# invocation); only /api/* runs the Worker.
+[assets]
+directory = "./dist/client"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [[d1_databases]]
 binding = "DB"
@@ -12,3 +20,4 @@ migrations_dir = "migrations"
 # so `wrangler login` is required. No API key needed.
 [ai]
 binding = "AI"
+remote = true

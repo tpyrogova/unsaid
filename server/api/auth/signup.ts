@@ -1,11 +1,11 @@
 import { signupRequestSchema } from '../../../shared/contract'
 import { bytesToBase64 } from '../../../shared/encoding'
 import { hashAuthKey, randomBytes } from '../../../server/crypto'
-import type { Env } from '../../../server/env'
+import type { ApiHandler } from '../../../server/handler'
 import { HttpError, json, readJson } from '../../../server/http'
 import { createSession, toAccount, type UserRow } from '../../../server/session'
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: ApiHandler = async ({ request, env }) => {
   const { email, authKey, keys } = await readJson(request, signupRequestSchema)
 
   const authSalt = bytesToBase64(randomBytes(16))

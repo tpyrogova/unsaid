@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { buildReviewSystemPrompt, markdownSection, systemPromptTemplate } from '../server/carefulPrompt'
-import { CAREFUL_REVIEW_MD } from '../server/generated/careful-review'
+import CAREFUL_REVIEW_MD from '../prompts/careful-review.md?raw'
 
 describe('prompts/careful-review.md', () => {
+  it.each(['## Системный промпт', '```text', '{framework}', '{crisis_contacts}', '## Протокол безопасности', '## Язык: запреты и замены'])(
+    'still contains «%s», which the code relies on',
+    (marker) => {
+      expect(CAREFUL_REVIEW_MD).toContain(marker)
+    },
+  )
+
   it('has a system prompt block with the expected placeholders', () => {
     const template = systemPromptTemplate()
     expect(template).toContain('{framework}')

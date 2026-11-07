@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { onRequestPost as signup } from '../functions/api/auth/signup'
-import { onRequestPost as categorize } from '../functions/api/categorize'
+import { onRequestPost as signup } from '../server/api/auth/signup'
+import { onRequestPost as categorize } from '../server/api/categorize'
 import { mapModelItems } from '../server/categorize'
 import { ALICE, call, createEnv, fakeAi } from './helpers'
 

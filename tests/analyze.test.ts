@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { onRequestPost as analyze } from '../functions/api/analyze'
-import { onRequestPost as signup } from '../functions/api/auth/signup'
+import { onRequestPost as analyze } from '../server/api/analyze'
+import { onRequestPost as signup } from '../server/api/auth/signup'
 import { ANALYSIS_MODEL, groundReview } from '../server/analysis'
 import { extractModelOutput } from '../server/qwen'
 import type { PeriodReview, Review } from '../shared/analysis'

@@ -7,6 +7,8 @@ export interface AiBinding {
 }
 
 export interface Env {
+  /** Built frontend (dist/), served for every non-/api request. */
+  ASSETS: Fetcher
   DB: D1Database
   AI: AiBinding
   /** Secret used to derive decoy KDF salts for unknown emails. */

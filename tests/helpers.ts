@@ -1,8 +1,6 @@
-import { onRequest as middleware } from '../functions/api/_middleware'
 import type { AiBinding, Env } from '../server/env'
+import { runHandler, type ApiHandler } from '../server/handler'
 import { createTestDb } from './d1'
-
-type Context = EventContext<Env, string, Record<string, unknown>>
 
 /** Fake Workers AI: returns queued responses in order. */
 export function fakeAi(...responses: unknown[]): AiBinding & { calls: Record<string, unknown>[] } {
@@ -18,8 +16,13 @@ export function fakeAi(...responses: unknown[]): AiBinding & { calls: Record<str
   }
 }
 
+/** Stand-in for the static-assets binding: serves a fake index.html. */
+export const fakeAssets = {
+  fetch: async () => new Response('<!doctype html><title>Unsaid</title>', { headers: { 'Content-Type': 'text/html' } }),
+} as unknown as Fetcher
+
 export function createEnv(ai: AiBinding = fakeAi()): Env {
-  return { DB: createTestDb(), AI: ai, SALT_SECRET: 'test-secret' }
+  return { ASSETS: fakeAssets, DB: createTestDb(), AI: ai, SALT_SECRET: 'test-secret' }
 }
 
 export interface CallOptions {
@@ -32,8 +35,8 @@ export interface CallOptions {
   lang?: string
 }
 
-/** Runs a handler through the real middleware, like Pages does. */
-export async function call(env: Env, handler: PagesFunction<Env>, options: CallOptions = {}) {
+/** Runs a handler through the same error boundary the router uses. */
+export async function call(env: Env, handler: ApiHandler, options: CallOptions = {}) {
   const headers = new Headers()
   if (options.body !== undefined) headers.set('Content-Type', options.contentType ?? 'application/json')
   if (options.cookie) headers.set('Cookie', options.cookie)
@@ -44,9 +47,7 @@ export async function call(env: Env, handler: PagesFunction<Env>, options: CallO
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   })
 
-  const context = { request, env, params: options.params ?? {} }
-  const next = () => handler(context as unknown as Context)
-  const response = await middleware({ ...context, next } as unknown as Context)
+  const response = await runHandler(handler, { request, env, params: options.params ?? {} })
 
   const setCookie = response.headers.get('Set-Cookie')
   return {

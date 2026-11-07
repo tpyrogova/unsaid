@@ -5,7 +5,7 @@ import {
   type StoredEntry,
 } from '../../../shared/contract'
 import { deleteEntries } from '../../../server/entries'
-import type { Env } from '../../../server/env'
+import type { ApiHandler } from '../../../server/handler'
 import { json, readJson } from '../../../server/http'
 import { requireUser } from '../../../server/session'
 
@@ -16,7 +16,7 @@ interface EntryRow {
   created_at: number
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestGet: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { results } = await env.DB.prepare(
     'SELECT id, ciphertext, iv, created_at FROM entries WHERE user_id = ?',
@@ -37,7 +37,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
  * Stores a batch of new encrypted entries. Skips ids that already exist and
  * ids the user previously deleted (so a re-import does not resurrect them).
  */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { entries } = await readJson(request, uploadEntriesRequestSchema)
 
@@ -56,7 +56,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 }
 
 /** Replaces the ciphertext of existing entries (e.g. after categorization). */
-export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPut: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { entries } = await readJson(request, updateEntriesRequestSchema)
 
@@ -70,7 +70,7 @@ export const onRequestPut: PagesFunction<Env> = async ({ request, env }) => {
 }
 
 /** Bulk delete (e.g. confirmed junk entries). */
-export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestDelete: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { ids } = await readJson(request, deleteEntriesRequestSchema)
   return json({ deleted: await deleteEntries(env, user.id, ids) })

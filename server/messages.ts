@@ -18,6 +18,7 @@ export const MESSAGES = {
   invalidEntryId: { ru: 'Некорректный id записи', en: 'Invalid entry id' },
   serverMisconfigured: { ru: 'Сервер не настроен: нет SALT_SECRET', en: 'Server is not configured: SALT_SECRET is missing' },
   internal: { ru: 'Что-то пошло не так на сервере', en: 'Something went wrong on the server' },
+  notFound: { ru: 'Неизвестный адрес API', en: 'Unknown API route' },
   modelQuota: {
     ru: 'Бесплатный дневной лимит модели исчерпан. Он обновится в 00:00 UTC (01:00 по Берлину).',
     en: 'The free daily model quota is used up. It resets at 00:00 UTC.',
@@ -47,11 +48,14 @@ export const MESSAGES = {
 export type MessageKey = keyof typeof MESSAGES
 export type ApiLang = 'ru' | 'en'
 
-/** Russian for ru/uk/be (and when unspecified), English otherwise. */
+/**
+ * English only when the first preferred language is English; Russian
+ * otherwise (including missing or wildcard headers). The app's client always
+ * sends `ru` or `en` explicitly.
+ */
 export function requestLang(request: Request): ApiLang {
-  const header = request.headers.get('Accept-Language')
-  if (!header) return 'ru'
-  return /^(ru|uk|be)\b/i.test(header.trim()) ? 'ru' : 'en'
+  const header = request.headers.get('Accept-Language') ?? ''
+  return /^en\b/i.test(header.trim()) ? 'en' : 'ru'
 }
 
 export function message(key: MessageKey, lang: ApiLang): string {

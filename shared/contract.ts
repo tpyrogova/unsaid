@@ -1,5 +1,5 @@
 /**
- * API contract shared by the browser client and Pages Functions.
+ * API contract shared by the browser client and the Worker.
  *
  * Note what is NOT here: no plaintext journal fields. The server only ever
  * sees opaque base64 blobs (`ciphertext`, `wrappedDek`) and a derived

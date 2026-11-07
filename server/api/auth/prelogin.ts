@@ -1,10 +1,10 @@
 import { preloginRequestSchema } from '../../../shared/contract'
 import { decoySalt } from '../../../server/crypto'
-import type { Env } from '../../../server/env'
+import type { ApiHandler } from '../../../server/handler'
 import { HttpError, json, readJson } from '../../../server/http'
 
 /** Returns the KDF salt the browser needs to derive keys from the password. */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: ApiHandler = async ({ request, env }) => {
   const { email } = await readJson(request, preloginRequestSchema)
 
   const user = await env.DB.prepare('SELECT kdf_salt FROM users WHERE email = ?')

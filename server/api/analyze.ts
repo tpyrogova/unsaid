@@ -1,7 +1,7 @@
 import { CRISIS_CONTACTS } from '../../config/crisis-contacts'
 import { analyzeRequestSchema, type AnalyzeResponse } from '../../shared/analysis'
 import { ANALYSIS_MODEL, reviewText } from '../../server/analysis'
-import type { Env } from '../../server/env'
+import type { ApiHandler } from '../../server/handler'
 import { json, readJson } from '../../server/http'
 import { assessRisk } from '../../server/safety'
 import { requireUser } from '../../server/session'
@@ -12,7 +12,7 @@ import { assertWithinBudget, recordUsage } from '../../server/usage'
  * Texts exist only for the duration of the request: not stored, not logged,
  * and Workers AI keeps zero data retention.
  */
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const body = await readJson(request, analyzeRequestSchema)
   const kind = body.scope === 'entry' ? 'analyze' : 'period'

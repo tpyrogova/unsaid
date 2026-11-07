@@ -1,11 +1,11 @@
 /**
- * Builds prompts from prompts/careful-review.md (embedded at build time).
+ * Builds prompts from prompts/careful-review.md (bundled by Vite via `?raw`).
  * The markdown is the single editable source: the system prompt, the
  * "forbidden → allowed" language table and the safety protocol all come from it.
  */
 import { crisisContactsText } from '../config/crisis-contacts'
 import { FRAMEWORKS, type FrameworkChoice } from '../shared/analysis'
-import { CAREFUL_REVIEW_MD } from './generated/careful-review'
+import CAREFUL_REVIEW_MD from '../prompts/careful-review.md?raw'
 
 /** Text of a `## Heading` section, up to the next `## `. */
 export function markdownSection(markdown: string, heading: string): string {

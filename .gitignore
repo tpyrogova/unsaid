@@ -29,5 +29,3 @@ npm-debug.log*
 *.suo
 *.sw?
 
-# Generated from prompts/*.md by scripts/build-prompts.mjs
-server/generated/

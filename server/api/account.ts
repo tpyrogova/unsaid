@@ -1,5 +1,5 @@
 import { reauthRequestSchema } from '../../shared/contract'
-import type { Env } from '../../server/env'
+import type { ApiHandler } from '../../server/handler'
 import { json, readJson } from '../../server/http'
 import { assertPassword } from '../../server/reauth'
 import { destroySession, requireUser } from '../../server/session'
@@ -9,7 +9,7 @@ import { destroySession, requireUser } from '../../server/session'
  * Tables are cleared explicitly instead of relying on ON DELETE CASCADE, so
  * the guarantee does not depend on foreign-key enforcement being enabled.
  */
-export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestDelete: ApiHandler = async ({ request, env }) => {
   const user = await requireUser(request, env)
   const { authKey } = await readJson(request, reauthRequestSchema)
   await assertPassword(env, user, authKey)
